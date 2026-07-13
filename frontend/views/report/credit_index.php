@@ -2,11 +2,9 @@
 
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
-use yii\grid\GridView;
 
 /* @var $this yii\web\View */
-/* @var $searchModel common\models\search\PaymentsSearch */
-/* @var $dataProvider yii\data\ActiveDataProvider */
+/* @var $credits array */
 $lang = Yii::$app->language;
 $this->title = 'Кредитлар буйича хисобот ' . Yii::$app->formatter->asDatetime($start, "php:d.m.Y") . ' - ' . Yii::$app->formatter->asDatetime($end, "php:d.m.Y");
 $this->params['breadcrumbs'][] = $this->title;
@@ -96,32 +94,21 @@ $this->params['breadcrumbs'][] = $this->title;
                         $total1 = $total1 + $one['real_summa']; ?></td>
                     <td>
                         <?php
-                        $summa = $one['real_summa'];
-                        $ustama = $summa * $one['percent'] / 100;
-                        //Условие стоит для отдельных договоров, потому что клиент сделал ошибку, из за чего пришлось поправить сумму 08,09,2025 00:34
-                        if ($one['id'] === 28943 || $one['id'] === 28748) {
-                            $ustama = $summa * 4.5 / 100;
-                        }
-                        if ($one['id'] === 28940) {
-                            $ustama = $summa * 14 / 100;
-                        }
-                        if($one['id'] == 131 ){
-                            $ustama = ($summa * 59.764/100) -26;
-                        }
-                        if ($one['id'] == 17349) $ustama = 0;
-                        echo yii::$app->formatter->asDecimal($ustama, 0);
-                        $total_ustama = $total_ustama + $ustama;
+                        echo yii::$app->formatter->asDecimal($one['ustama'], 0);
+                        $total_ustama += $one['ustama'];
                         ?>
                     </td>
-                    <td id="prepaid_<?= $one['id'] ?>" class="prepaidSumma">
+                    <td>
                         <?php echo yii::$app->formatter->asDecimal($one['prepaid_summa'], 0);
-                        $total2 = $total2 + $one['prepaid_summa']; ?>
+                        $total2 += $one['prepaid_summa']; ?>
                     </td>
-                    <td id="psumma<?= $one['id'] ?>">
-                        0
+                    <td>
+                        <?php echo yii::$app->formatter->asDecimal($one['psumma'], 0);
+                        $total3 += $one['psumma']; ?>
                     </td>
-                    <td class="ost" id="ost<?= $one['id'] ?>">
-                        <?php echo Yii::$app->formatter->asDecimal($one['real_summa'] + $ustama, 0) ?>
+                    <td>
+                        <?php echo Yii::$app->formatter->asDecimal($one['ost'], 0);
+                        $total4 += $one['ost']; ?>
                     </td>
                 </tr>
                 <?php $k++; endforeach; ?>
@@ -157,47 +144,5 @@ $this->params['breadcrumbs'][] = $this->title;
             XLSX.write(wb, {bookType: type, bookSST: true, type: 'base64'}) :
             XLSX.writeFile(wb, fn || ('<?=Html::encode($this->title)?>.' + (type || 'xlsx')));
     }
-
-    function numberWithCommas(x) {
-        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-    }
-
-    function prepaidTotal() {
-        let totalPrepaid = 0;
-        Array.prototype.forEach.call(document.getElementsByClassName('prepaidSumma'), function (el) {
-            // Do stuff here
-            if (parseInt(el.textContent) > 0) {
-                let prepaid = parseInt(el.textContent.trim().replaceAll(' ', ''));
-                let _ = document.getElementById(`ost${el.id.toString().split('_')[1]}`);
-                console.log(_.textContent.trim().replaceAll(' ', ''), prepaid, el.id);
-                _.textContent = numberWithCommas(parseInt(_.textContent.trim().replaceAll(' ', '')) - prepaid);
-            }
-        })
-    }
-
-    prepaidTotal();
-
-    function setPsumma() {
-        let totalPayed = 0;
-        let totalOst = 0;
-        <?php $i = 0; foreach ($payments as $item):?>
-        document.querySelector(`#psumma<?=$item['id'];?>`).textContent = numberWithCommas('<?=$item['psumma']?>')
-
-        document.querySelector(`#ost<?=$item['id'];?>`).textContent = numberWithCommas(parseInt('<?=$item['ost'] ?>'))
-
-        totalPayed += parseInt("<?=$item['psumma']?>");
-        totalOst += parseInt("<?=$item['ost']?>");
-
-        <?php $i++; endforeach;?>
-        document.querySelector('#totalPayed').textContent = numberWithCommas(totalPayed);
-        let total_ost = 0;
-        document.querySelectorAll('.ost').forEach(element => {
-            //console.log(element.textContent, +(element.textContent.replaceAll(' ', '')));
-            total_ost += parseInt(element.textContent.replaceAll(' ', ''))
-        });
-        document.querySelector('#totalOst').textContent = numberWithCommas(parseInt(total_ost));
-    }
-
-    setPsumma();
 
 </script>
