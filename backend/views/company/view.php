@@ -69,7 +69,12 @@ $this->params['breadcrumbs'][] = $this->title;
                 'summary' => false,
                 'columns' => [
                     'id',
-                    'limit',
+                    [
+                        'attribute' => 'limit',
+                        'value' => function (CompanyPlanLimit $model) {
+                            return Yii::$app->formatter->asDecimal($model->limit);
+                        },
+                    ],
                     [
                         'attribute' => 'status',
                         'value' => function (CompanyPlanLimit $model) {
@@ -97,7 +102,12 @@ $this->params['breadcrumbs'][] = $this->title;
                 'summary' => false,
                 'columns' => [
                     'id',
-                    'limit',
+                    [
+                        'attribute' => 'limit',
+                        'value' => function (CompanyPlanLimit $model) {
+                            return Yii::$app->formatter->asDecimal($model->limit);
+                        },
+                    ],
                     [
                         'attribute' => 'status',
                         'value' => function (CompanyPlanLimit $model) {
