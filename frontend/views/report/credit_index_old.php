@@ -1,0 +1,190 @@
+<?php
+
+use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
+use yii\grid\GridView;
+
+/* @var $this yii\web\View */
+/* @var $searchModel common\models\search\PaymentsSearch */
+/* @var $dataProvider yii\data\ActiveDataProvider */
+$lang = Yii::$app->language;
+$this->title = 'Кредитлар буйича хисобот ' . Yii::$app->formatter->asDatetime($start, "php:d.m.Y") . ' - ' . Yii::$app->formatter->asDatetime($end, "php:d.m.Y");
+$this->params['breadcrumbs'][] = $this->title;
+
+?>
+<div class="report-index">
+    <div class="row">
+        <div class="col-md-6">
+            <h1><?= Html::encode($this->title) ?></h1>
+        </div>
+        <div class="col-md-6 text-right">
+            <button class="btn btn-primary  btn-xsmall mb-2"
+                    onclick="ExportToExcel('xlsx')"><?= Yii::$app->params['export_to'][$lang] ?></button>
+        </div>
+        <div class="col-md-12">
+            <?php \yii\widgets\ActiveForm::begin(['method' => 'get', 'action' => \yii\helpers\Url::to(['/report/credit-index'])]) ?>
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <?= Html::label('Дата начала') ?>
+                        <?= Html::input('date', 'Search[start]', '', ['class' => 'form-control']) ?>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <?= Html::label('Дата начала') ?>
+                        <?= Html::input('date', 'Search[end]', '', ['class' => 'form-control']) ?>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <?= Html::label('Магазин') ?>
+                        <?= Html::dropDownList('Search[company]', '', ArrayHelper::map(\common\models\Company::find()->all(), 'id', 'name'), ['class' => 'form-control', 'prompt' => 'Выберите магазин']) ?>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <?=Html::label('Тип кредита')?>
+                        <?=Html::dropDownList('Search[credit-type]','',ArrayHelper::map(\common\models\CreditType::find()->all(),'id','name'),['class'=>'form-control','prompt'=>'Выберите тип'])?>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <?= Html::submitButton('Поиск', ['class' => 'btn mt-4 btn-primary w-100']) ?>
+                </div>
+                <div class="col-md-1">
+                    <?= Html::a('Сбросить', ['/report/credit-index'], ['class' => 'btn mt-4 btn-warning w-100']) ?>
+                </div>
+            </div>
+            <?php \yii\widgets\ActiveForm::end(); ?>
+        </div>
+    </div>
+
+    <div class="mt-2">
+        <table class="table table-bordered text-center table-sm" id="tbl_exporttable_to_xls_1">
+            <tr class="active" style="font-weight: bold;">
+                <td>#</td>
+                <td><?= Yii::$app->params['labels_clients'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_phone'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_credit_id'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_credit_type'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_company'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_user'][$lang] ?></td>
+                <td><?= Yii::$app->params['labels_self_price'][$lang] ?></td>
+                <td>Устама</td>
+                <td><?= Yii::$app->params['30%prepaid'][$lang] ?></td>
+                <td><?= Yii::$app->params['credit_payed_amount'][$lang] ?></td>
+                <td class="active"><?= Yii::$app->params['todat_index_unpayed'][$lang] ?></td>
+            </tr>
+            <?php
+            $total1 = 0;
+            $total_ustama = 0;
+            $total2 = 0;
+            $total3 = 0;
+            $total4 = 0;
+            ?>
+            <?php $k = 1;
+            foreach ($credits as $one): ?>
+                <tr>
+                    <td><?php echo $k; ?></td>
+                    <td><?php echo $one['fullname']; ?></td>
+                    <td><?php echo $one['phone']; ?></td>
+                    <td><?php echo $one['id']; ?> - <?php echo $one['doc_date_start']; ?></td>
+                    <td><?php echo $one['type_name']?></td>
+                    <td><?php echo $one['name']; ?></td>
+                    <td><?php echo (isset($one['username'])) ? $one['username'] : '-'; ?></td>
+                    <td><?php echo yii::$app->formatter->asDecimal($one['real_summa'], 0);
+                        $total1 = $total1 + $one['real_summa']; ?></td>
+                    <td>
+                        <?php
+                        $summa = $one['real_summa'];
+                        $ustama = $summa * $one['percent'] / 100;
+                        echo yii::$app->formatter->asDecimal($ustama, 0);
+                        $total_ustama = $total_ustama + $ustama;
+                        ?>
+                    </td>
+                    <td id="prepaid_<?=$one['id']?>" class="prepaidSumma">
+                        <?php echo yii::$app->formatter->asDecimal($one['prepaid_summa'], 0);
+                        $total2 = $total2 + $one['prepaid_summa']; ?>
+                    </td>
+                    <td id="psumma<?= $one['id'] ?>">
+                        0
+                    </td>
+                    <td class="ost" id="ost<?= $one['id'] ?>">
+                        <?php echo Yii::$app->formatter->asDecimal($one['real_summa'] + $ustama, 0) ?>
+                    </td>
+                </tr>
+                <?php $k++; endforeach; ?>
+            <tfoot class="table-dark">
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><?php echo yii::$app->formatter->asDecimal($total1, 0); ?></td>
+                <td>
+                    <?php echo yii::$app->formatter->asDecimal($total_ustama, 0); ?>
+                </td>
+                <td><?php echo yii::$app->formatter->asDecimal($total2, 0); ?></td>
+                <td id="totalPayed"><?php echo yii::$app->formatter->asDecimal($total3, 0); ?></td>
+                <td id="totalOst"><?php echo yii::$app->formatter->asDecimal($total4, 0); ?></td>
+
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+
+</div>
+<script type="text/javascript" src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
+<script>
+    function ExportToExcel(type, fn, dl) {
+        var elt = document.getElementById('tbl_exporttable_to_xls_1');
+        var wb = XLSX.utils.table_to_book(elt, {sheet: "sheet1"});
+        return dl ?
+            XLSX.write(wb, {bookType: type, bookSST: true, type: 'base64'}) :
+            XLSX.writeFile(wb, fn || ('<?=Html::encode($this->title)?>.' + (type || 'xlsx')));
+    }
+
+    function numberWithCommas(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+    function prepaidTotal(){
+        let totalPrepaid = 0;
+        Array.prototype.forEach.call(document.getElementsByClassName('prepaidSumma'), function(el) {
+            // Do stuff here
+            if(parseInt(el.textContent) > 0) {
+                let prepaid = parseInt(el.textContent.trim().replaceAll(' ', ''));
+                let _ = document.getElementById(`ost${el.id.toString().split('_')[1]}`);
+                console.log(_.textContent.trim().replaceAll(' ', ''), prepaid, el.id);
+                _.textContent = numberWithCommas(parseInt(_.textContent.trim().replaceAll(' ', '')) - prepaid);
+            }
+        })
+    }
+    prepaidTotal();
+
+    function setPsumma() {
+        let totalPayed = 0;
+        let totalOst = 0;
+        <?php $i = 0; foreach ($payments as $item):?>
+        document.querySelector(`#psumma<?=$item['id'];?>`).textContent = numberWithCommas('<?=$item['psumma']?>')
+
+        document.querySelector(`#ost<?=$item['id'];?>`).textContent = numberWithCommas(parseInt('<?=$item['ost'] ?>'))
+
+        totalPayed += parseInt("<?=$item['psumma']?>");
+        totalOst += parseInt("<?=$item['ost']?>");
+
+        <?php $i++; endforeach;?>
+        document.querySelector('#totalPayed').textContent = numberWithCommas(totalPayed);
+        let total_ost = 0;
+        document.querySelectorAll('.ost').forEach(element => {
+            //console.log(element.textContent, +(element.textContent.replaceAll(' ', '')));
+            total_ost += parseInt(element.textContent.replaceAll(' ', ''))
+        });
+        document.querySelector('#totalOst').textContent = numberWithCommas(parseInt(total_ost));
+    }
+
+    setPsumma();
+
+</script>

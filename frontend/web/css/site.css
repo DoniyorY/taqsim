@@ -1,0 +1,238 @@
+body {
+    font-family: 'Roboto Condensed', sans-serif;
+}
+main > .container {
+    padding: 70px 15px 20px;
+}
+h1 {
+    font-size:2em;
+}
+.footer {
+    background-color: #f5f5f5;
+    font-size: .9em;
+    height: 60px;
+}
+
+.footer > .container {
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.not-set {
+    color: #c55;
+    font-style: italic;
+}
+
+/* add sorting icons to gridview sort links */
+a.asc:after, a.desc:after {
+    content: '';
+    left: 3px;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border: solid 5px transparent;
+    margin: 4px 4px 2px 4px;
+    background: transparent;
+}
+
+a.asc:after {
+    border-bottom: solid 7px #212529;
+    border-top-width: 0;
+}
+
+a.desc:after {
+    border-top: solid 7px #212529;
+    border-bottom-width: 0;
+}
+
+.grid-view th,
+.grid-view td:last-child {
+    white-space: nowrap;
+}
+
+.grid-view .filters input,
+.grid-view .filters select {
+    min-width: 50px;
+}
+
+.hint-block {
+    display: block;
+    margin-top: 5px;
+    color: #999;
+}
+
+.error-summary {
+    color: #a94442;
+    background: #fdf7f7;
+    border-left: 3px solid #eed3d7;
+    padding: 10px 20px;
+    margin: 0 0 15px 0;
+}
+
+/* align the logout "link" (button in form) of the navbar */
+.nav li > form > button.logout {
+    padding-top: 7px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+@media(max-width:767px) {
+    .nav li > form > button.logout {
+        display:block;
+        text-align: left;
+        width: 100%;
+        padding: 10px 0;
+    }
+}
+
+.nav > li > form > button.logout:focus,
+.nav > li > form > button.logout:hover {
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.nav > li > form > button.logout:focus {
+    outline: none;
+}
+
+:root {
+    --color-white: #fff;
+    --color-black: #333;
+    --color-gray: #75787b;
+    --color-gray-light: #bbb;
+    --color-gray-disabled: #e8e8e8;
+    --color-blue: #0069d9;
+    --color-green-dark: #383;
+    --font-size-small: .75rem;
+    --font-size-default: .875rem;
+}
+section {
+    margin-bottom: 2rem;
+}
+
+.progress-barr {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+.progress-barr li {
+    flex: 2;
+    position: relative;
+    padding: 0 0 14px 0;
+    font-size: var(--font-size-default);
+    line-height: 1.5;
+    color: var(--color-blue);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: visible;
+    min-width: 0;
+    text-align: center;
+    border-bottom: 2px solid var(--color-gray-disabled);
+}
+.progress-barr li:first-child,
+.progress-barr li:last-child {
+    flex: 1;
+}
+.progress-barr li:last-child {
+    text-align: right;
+}
+.progress-barr li:before {
+    content: "";
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-color: var(--color-gray-disabled);
+    border-radius: 50%;
+    border: 2px solid var(--color-white);
+    position: absolute;
+    left: calc(50% - 6px);
+    bottom: -7px;
+    z-index: 3;
+    transition: all .2s ease-in-out;
+}
+.progress-barr li:first-child:before {
+    left: 0;
+}
+.progress-barr li:last-child:before {
+    right: 0;
+    left: auto;
+}
+.progress-barr span {
+    transition: opacity .3s ease-in-out;
+}
+.progress-barr li:not(.is-active) span {
+    opacity: 0;
+}
+.progress-barr .is-complete:not(:first-child):after,
+.progress-barr .is-active:not(:first-child):after {
+    content: "";
+    display: block;
+    width: 100%;
+    position: absolute;
+    bottom: -2px;
+    left: -50%;
+    z-index: 2;
+    border-bottom: 4px solid var(--color-blue);
+}
+.progress-barr li:last-child span {
+    width: 200%;
+    display: inline-block;
+    position: absolute;
+    left: -100%;
+}
+
+.progress-barr .is-complete:last-child:after,
+.progress-barr .is-active:last-child:after {
+    width: 200%;
+    left: -100%;
+}
+
+.progress-barr .is-complete:before {
+    background-color: var(--color-blue);
+}
+
+.progress-barr .is-active:before,
+.progress-barr li:hover:before,
+.progress-barr .is-hovered:before {
+    background-color: var(--color-white);
+    border-color: var(--color-blue);
+    cursor: pointer;
+}
+.progress-barr li:hover:before,
+.progress-barr .is-hovered:before {
+    transform: scale(1.33);
+}
+
+.progress-barr li:hover span,
+.progress-barr li.is-hovered span {
+    opacity: 1;
+}
+
+.progress-barr:hover li:not(:hover) span {
+    opacity: 0;
+}
+
+.x-ray .progress-barr,
+.x-ray .progress-barr li {
+    border: 1px dashed red;
+}
+
+.progress-barr .has-changes {
+    opacity: 1 !important;
+}
+.progress-barr .has-changes:before {
+    content: "";
+    display: block;
+    width: 8px;
+    height: 8px;
+    position: absolute;
+    left: calc(50% - 4px);
+    bottom: -20px;
+    background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%208%208%22%3E%3Cpath%20fill%3D%22%23ed1c24%22%20d%3D%22M4%200l4%208H0z%22%2F%3E%3C%2Fsvg%3E');
+}
+#sig-canvas {
+    border: 2px solid #CCCCCC;
+    border-radius: 15px;
+    cursor: crosshair;
+}

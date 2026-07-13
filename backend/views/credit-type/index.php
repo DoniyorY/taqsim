@@ -1,0 +1,41 @@
+<?php
+
+use yii\helpers\Html;
+use yii\helpers\Url;
+use yii\grid\ActionColumn;
+use yii\grid\GridView;
+
+/* @var $this yii\web\View */
+/* @var $searchModel common\models\search\CreditTypeSearch */
+/* @var $dataProvider yii\data\ActiveDataProvider */
+/* @var $model common\models\CreditType */
+$lang =  Yii::$app->language;
+$this->title = Yii::$app->params['labels_credit_type'][$lang];
+$this->params['breadcrumbs'][] = $this->title;
+?>
+<div class="credit-type-index">
+
+    <h1><?= Html::encode($this->title) ?></h1>
+
+    <?php echo $this->render('_form', ['model' => $model]); ?>
+
+    <?= GridView::widget([
+        'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel,
+        'columns' => [
+            ['class' => 'yii\grid\SerialColumn'],
+
+            //'id',
+            'name',
+            [
+                'class' => ActionColumn::className(),
+                'urlCreator' => function ($action, $model, $key, $index, $column) {
+                    return Url::toRoute([$action, 'id' => $model->id]);
+                 },
+                'template' => '{update} {delete}'
+            ],
+        ],
+    ]); ?>
+
+
+</div>
