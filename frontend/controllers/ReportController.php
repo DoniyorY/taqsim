@@ -301,7 +301,70 @@ class ReportController extends Controller
     }
     
     public function actionStatisticCount(){
-    
+        $request = Yii::$app->request->get('date_begin');
+        if (isset($request)) {
+            $start = strtotime(Yii::$app->request->get('date_begin'));
+            $end = strtotime(Yii::$app->request->get('date_end')) + 86399;
+        } else {
+            $start = strtotime(date('Y-m-01'));
+            $end = strtotime(date('Y-m-t'));
+        }
+
+        $planCountSubQuery = (new Query())
+            ->select([
+                'credit_id',
+                'month_count' => new Expression('COUNT(*)'),
+            ])
+            ->from('credit_plan')
+            ->groupBy('credit_id');
+
+        $statistic = (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'credit_count' => new Expression('COUNT(c.id)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], [
+                'and',
+                'c.company_id = co.id',
+                ['c.credit_status' => 2],
+                ['between', 'c.created', $start, $end],
+            ])
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+
+        $companies = [];
+        $monthCounts = [];
+        foreach ($statistic as $row) {
+            $companyId = $row['company_id'];
+            if (!isset($companies[$companyId])) {
+                $companies[$companyId] = [
+                    'name' => $row['company_name'],
+                    'counts' => [],
+                    'total' => 0,
+                ];
+            }
+
+            if ($row['month_count'] !== null) {
+                $monthCount = (int)$row['month_count'];
+                $creditCount = (int)$row['credit_count'];
+                $companies[$companyId]['counts'][$monthCount] = $creditCount;
+                $companies[$companyId]['total'] += $creditCount;
+                $monthCounts[$monthCount] = $monthCount;
+            }
+        }
+        sort($monthCounts);
+
+        return $this->render('statistic_count', [
+            'start' => $start,
+            'end' => $end,
+            'companies' => $companies,
+            'monthCounts' => $monthCounts,
+        ]);
     }
 
 
@@ -528,4 +591,3 @@ class ReportController extends Controller
         die();
     }
 }
-
