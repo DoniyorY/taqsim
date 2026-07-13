@@ -478,40 +478,52 @@ class ReportController extends Controller
 
     public function actionCompanyLimitStatistic()
     {
-        $creditStatistic = $this->getCompanyCreditLimitStatistic();
-        $paymentStatistic = $this->getCompanyPaymentLimitStatistic();
+        return $this->render('company_limit_statistic', [
+            'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS),
+            'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS),
+            'salaryPercent' => 2,
+        ]);
+    }
+
+    private function getCompanyLimitStatistic($type)
+    {
+        $rows = $type == CompanyPlanLimit::TYPE_CONTRACTS
+            ? $this->getCompanyCreditLimitStatistic()
+            : $this->getCompanyPaymentLimitStatistic();
         $companies = [];
 
-        foreach ($creditStatistic as $row) {
-            $companyId = $row['company_id'];
-            $companies[$companyId] = [
-                'company_id' => $companyId,
-                'company_name' => $row['company_name'],
-                'credit' => $this->prepareCompanyLimitStatisticRow($row),
-                'payment' => null,
-            ];
-        }
-
-        foreach ($paymentStatistic as $row) {
+        foreach ($rows as $row) {
             $companyId = $row['company_id'];
             if (!isset($companies[$companyId])) {
                 $companies[$companyId] = [
                     'company_id' => $companyId,
                     'company_name' => $row['company_name'],
-                    'credit' => null,
-                    'payment' => null,
+                    'limit' => (int)$row['limit'],
+                    'total' => 0,
+                    'percent' => null,
+                    'rows' => [],
                 ];
             }
-            $companies[$companyId]['payment'] = $this->prepareCompanyLimitStatisticRow($row);
+
+            $summa = (int)$row['summa'];
+            $companies[$companyId]['total'] += $summa;
+            $companies[$companyId]['rows'][] = [
+                'credit_type_id' => $row['credit_type_id'],
+                'credit_type_name' => $row['credit_type_name'] ?: 'Без типа',
+                'summa' => $summa,
+            ];
         }
+
+        foreach ($companies as &$company) {
+            $company['percent'] = $company['limit'] > 0 ? ($company['total'] / $company['limit']) * 100 : null;
+        }
+        unset($company);
 
         usort($companies, function ($left, $right) {
             return strcmp($left['company_name'], $right['company_name']);
         });
 
-        return $this->render('company_limit_statistic', [
-            'companies' => $companies,
-        ]);
+        return $companies;
     }
 
     private function getCompanyCreditLimitStatistic()
@@ -521,6 +533,8 @@ class ReportController extends Controller
                 'company_id' => 'co.id',
                 'company_name' => 'co.name',
                 'limit' => 'cpl.limit',
+                'credit_type_id' => 'c.credit_type_id',
+                'credit_type_name' => 'ct.name',
                 'summa' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
             ])
             ->from(['co' => 'company'])
@@ -536,8 +550,9 @@ class ReportController extends Controller
                 ['<>', 'c.credit_status', -2],
                 ['c.rejected' => 0],
             ])
-            ->groupBy(['co.id', 'co.name', 'cpl.limit'])
-            ->orderBy(['co.name' => SORT_ASC])
+            ->leftJoin(['ct' => 'credit_type'], 'ct.id = c.credit_type_id')
+            ->groupBy(['co.id', 'co.name', 'cpl.limit', 'c.credit_type_id', 'ct.name'])
+            ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
             ->all();
     }
 
@@ -548,6 +563,8 @@ class ReportController extends Controller
                 'company_id' => 'co.id',
                 'company_name' => 'co.name',
                 'limit' => 'cpl.limit',
+                'credit_type_id' => 'p.credit_type_id',
+                'credit_type_name' => 'ct.name',
                 'summa' => new Expression('COALESCE(SUM(p.amount), 0)'),
             ])
             ->from(['co' => 'company'])
@@ -558,21 +575,10 @@ class ReportController extends Controller
                 ['cpl.status' => 1],
             ])
             ->leftJoin(['p' => 'payments'], 'p.company_id = co.id')
-            ->groupBy(['co.id', 'co.name', 'cpl.limit'])
-            ->orderBy(['co.name' => SORT_ASC])
+            ->leftJoin(['ct' => 'credit_type'], 'ct.id = p.credit_type_id')
+            ->groupBy(['co.id', 'co.name', 'cpl.limit', 'p.credit_type_id', 'ct.name'])
+            ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
             ->all();
-    }
-
-    private function prepareCompanyLimitStatisticRow($row)
-    {
-        $limit = (int)$row['limit'];
-        $summa = (int)$row['summa'];
-
-        return [
-            'limit' => $limit,
-            'summa' => $summa,
-            'percent' => $limit > 0 ? ($summa / $limit) * 100 : null,
-        ];
     }
 
     public function actionReport()
