@@ -357,6 +357,25 @@ class ReportController extends Controller
             ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
             ->all();
 
+        $contractStatistic = (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'contract_sum' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], [
+                'and',
+                'c.company_id = co.id',
+                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
+                ['between', 'c.created', $start, $end],
+            ])
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+
         $companies = [];
         $monthCounts = [];
         foreach ($statistic as $row) {
@@ -379,6 +398,29 @@ class ReportController extends Controller
         }
         $monthCounts = array_values(array_unique($monthCounts));
         sort($monthCounts, SORT_NUMERIC);
+
+        $contractCompanies = [];
+        $contractMonthCounts = $monthCounts;
+        foreach ($contractStatistic as $row) {
+            $companyId = $row['company_id'];
+            if (!isset($contractCompanies[$companyId])) {
+                $contractCompanies[$companyId] = [
+                    'name' => $row['company_name'],
+                    'sums' => [],
+                    'total' => 0,
+                ];
+            }
+
+            if ($row['month_count'] !== null) {
+                $monthCount = (int)$row['month_count'];
+                $contractSum = (int)$row['contract_sum'];
+                $contractCompanies[$companyId]['sums'][$monthCount] = $contractSum;
+                $contractCompanies[$companyId]['total'] += $contractSum;
+                $contractMonthCounts[$monthCount] = $monthCount;
+            }
+        }
+        $contractMonthCounts = array_values(array_unique($contractMonthCounts));
+        sort($contractMonthCounts, SORT_NUMERIC);
 
         $paymentCompanies = [];
         $paymentMonthCounts = $monthCounts;
@@ -408,6 +450,8 @@ class ReportController extends Controller
             'end' => $end,
             'companies' => $companies,
             'monthCounts' => $monthCounts,
+            'contractCompanies' => $contractCompanies,
+            'contractMonthCounts' => $contractMonthCounts,
             'paymentCompanies' => $paymentCompanies,
             'paymentMonthCounts' => $paymentMonthCounts,
         ]);
