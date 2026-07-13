@@ -15,6 +15,7 @@ use common\models\search\CreditSearch;
 use common\models\search\PaymentsSearch;
 use common\models\Payments;
 use common\models\CreditPlan;
+use common\models\CompanyPlanLimit;
 
 
 class ReportController extends Controller
@@ -37,6 +38,7 @@ class ReportController extends Controller
                             'credit-index',
                             'lawyer',
                             'dept',
+                            'company-limit-statistic',
                             'update-autopay'
                         ],
                         'allow' => true,
@@ -472,6 +474,106 @@ class ReportController extends Controller
         ];
     }
 
+
+
+    public function actionCompanyLimitStatistic()
+    {
+        $creditStatistic = $this->getCompanyCreditLimitStatistic();
+        $paymentStatistic = $this->getCompanyPaymentLimitStatistic();
+        $companies = [];
+
+        foreach ($creditStatistic as $row) {
+            $companyId = $row['company_id'];
+            $companies[$companyId] = [
+                'company_id' => $companyId,
+                'company_name' => $row['company_name'],
+                'credit' => $this->prepareCompanyLimitStatisticRow($row),
+                'payment' => null,
+            ];
+        }
+
+        foreach ($paymentStatistic as $row) {
+            $companyId = $row['company_id'];
+            if (!isset($companies[$companyId])) {
+                $companies[$companyId] = [
+                    'company_id' => $companyId,
+                    'company_name' => $row['company_name'],
+                    'credit' => null,
+                    'payment' => null,
+                ];
+            }
+            $companies[$companyId]['payment'] = $this->prepareCompanyLimitStatisticRow($row);
+        }
+
+        usort($companies, function ($left, $right) {
+            return strcmp($left['company_name'], $right['company_name']);
+        });
+
+        return $this->render('company_limit_statistic', [
+            'companies' => $companies,
+        ]);
+    }
+
+    private function getCompanyCreditLimitStatistic()
+    {
+        return (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'limit' => 'cpl.limit',
+                'summa' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->innerJoin(['cpl' => 'company_plan_limit'], [
+                'and',
+                'cpl.company_id = co.id',
+                ['cpl.type' => CompanyPlanLimit::TYPE_CONTRACTS],
+                ['cpl.status' => 1],
+            ])
+            ->leftJoin(['c' => 'credit'], [
+                'and',
+                'c.company_id = co.id',
+                ['<>', 'c.credit_status', -2],
+                ['c.rejected' => 0],
+            ])
+            ->groupBy(['co.id', 'co.name', 'cpl.limit'])
+            ->orderBy(['co.name' => SORT_ASC])
+            ->all();
+    }
+
+    private function getCompanyPaymentLimitStatistic()
+    {
+        return (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'limit' => 'cpl.limit',
+                'summa' => new Expression('COALESCE(SUM(p.amount), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->innerJoin(['cpl' => 'company_plan_limit'], [
+                'and',
+                'cpl.company_id = co.id',
+                ['cpl.type' => CompanyPlanLimit::TYPE_PAYMENTS],
+                ['cpl.status' => 1],
+            ])
+            ->leftJoin(['p' => 'payments'], 'p.company_id = co.id')
+            ->groupBy(['co.id', 'co.name', 'cpl.limit'])
+            ->orderBy(['co.name' => SORT_ASC])
+            ->all();
+    }
+
+    private function prepareCompanyLimitStatisticRow($row)
+    {
+        $limit = (int)$row['limit'];
+        $summa = (int)$row['summa'];
+
+        return [
+            'limit' => $limit,
+            'summa' => $summa,
+            'percent' => $limit > 0 ? ($summa / $limit) * 100 : null,
+        ];
+    }
 
     public function actionReport()
     {
