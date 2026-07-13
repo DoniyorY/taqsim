@@ -11,10 +11,6 @@ use yii\widgets\ActiveForm;
       <div class="col-md-6">
          <h1><?= Html::encode($this->title) ?></h1>
       </div>
-      <div class="col-md-6 text-right">
-         <button class="btn btn-primary  btn-xsmall mb-2"
-                 onclick="ExportToExcel('xlsx')"><?= Yii::$app->params['export_to'][$lang] ?></button>
-      </div>
    </div>
 
    <?php $form = ActiveForm::begin(['method' => 'get']) ?>
@@ -40,7 +36,26 @@ use yii\widgets\ActiveForm;
    </div>
    <?php ActiveForm::end(); ?>
 
-   <div class="mt-2">
+   <ul class="nav nav-pills mt-3 mb-2" role="navigation" aria-label="Навигация по таблицам">
+      <li class="nav-item">
+         <a href="#credit-count-table" class="nav-link active">Количество кредитов</a>
+      </li>
+      <li class="nav-item">
+         <a href="#contract-sum-table" class="nav-link">Сумма договоров</a>
+      </li>
+      <li class="nav-item">
+         <a href="#payment-sum-table" class="nav-link">Сумма платежей</a>
+      </li>
+   </ul>
+
+   <div class="mt-2" id="credit-count-table">
+      <div class="d-flex justify-content-between align-items-center">
+         <h3>Количество кредитов по количеству месяцев</h3>
+         <button class="btn btn-primary btn-xsmall mb-2"
+                 onclick="ExportToExcel('tbl_exporttable_to_xls', 'statistic-credit-count.xlsx')">
+            <?= Yii::$app->params['export_to'][$lang] ?>
+         </button>
+      </div>
       <table class="table table-sm table-striped table-bordered text-center" border="1" id="tbl_exporttable_to_xls">
          <thead>
          <tr>
@@ -92,8 +107,14 @@ use yii\widgets\ActiveForm;
 
    <hr>
 
-   <div class="mt-2">
-      <h3>Сумма договоров по количеству месяцев</h3>
+   <div class="mt-2" id="contract-sum-table">
+      <div class="d-flex justify-content-between align-items-center">
+         <h3>Сумма договоров по количеству месяцев</h3>
+         <button class="btn btn-primary btn-xsmall mb-2"
+                 onclick="ExportToExcel('tbl_contract_exporttable_to_xls', 'statistic-contract-sum.xlsx')">
+            <?= Yii::$app->params['export_to'][$lang] ?>
+         </button>
+      </div>
       <table class="table table-sm table-striped table-bordered text-center" border="1" id="tbl_contract_exporttable_to_xls">
          <thead>
          <tr>
@@ -145,8 +166,14 @@ use yii\widgets\ActiveForm;
 
    <hr>
 
-   <div class="mt-2">
-      <h3>Сумма платежей по количеству месяцев</h3>
+   <div class="mt-2" id="payment-sum-table">
+      <div class="d-flex justify-content-between align-items-center">
+         <h3>Сумма платежей по количеству месяцев</h3>
+         <button class="btn btn-primary btn-xsmall mb-2"
+                 onclick="ExportToExcel('tbl_payment_exporttable_to_xls', 'statistic-payment-sum.xlsx')">
+            <?= Yii::$app->params['export_to'][$lang] ?>
+         </button>
+      </div>
       <table class="table table-sm table-striped table-bordered text-center" border="1" id="tbl_payment_exporttable_to_xls">
          <thead>
          <tr>
@@ -198,11 +225,10 @@ use yii\widgets\ActiveForm;
 </div>
 <script type="text/javascript" src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
 <script>
-    function ExportToExcel(type, fn, dl) {
-        var elt = document.getElementById('tbl_exporttable_to_xls');
+    function ExportToExcel(tableId, filename, type) {
+        var elt = document.getElementById(tableId);
+        var exportType = type || 'xlsx';
         var wb = XLSX.utils.table_to_book(elt, {sheet: "sheet1"});
-        return dl ?
-            XLSX.write(wb, {bookType: type, bookSST: true, type: 'base64'}) :
-            XLSX.writeFile(wb, fn || ('statistic-count.' + (type || 'xlsx')));
+        XLSX.writeFile(wb, filename || ('statistic-count.' + exportType));
     }
 </script>

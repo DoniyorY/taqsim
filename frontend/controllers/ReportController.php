@@ -310,71 +310,10 @@ class ReportController extends Controller
             $end = strtotime(date('Y-m-t'));
         }
 
-        $planCountSubQuery = (new Query())
-            ->select([
-                'credit_id',
-                'month_count' => new Expression('COUNT(*)'),
-            ])
-            ->from('credit_plan')
-            ->groupBy('credit_id');
-
-        $statistic = (new Query())
-            ->select([
-                'company_id' => 'co.id',
-                'company_name' => 'co.name',
-                'month_count' => 'plans.month_count',
-                'credit_count' => new Expression('COUNT(c.id)'),
-            ])
-            ->from(['co' => 'company'])
-            ->leftJoin(['c' => 'credit'], [
-                'and',
-                'c.company_id = co.id',
-                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
-                ['between', 'c.created', $start, $end],
-            ])
-            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
-            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
-            ->all();
-
-        $paymentStatistic = (new Query())
-            ->select([
-                'company_id' => 'co.id',
-                'company_name' => 'co.name',
-                'month_count' => 'plans.month_count',
-                'payment_sum' => new Expression('COALESCE(SUM(p.amount), 0)'),
-            ])
-            ->from(['co' => 'company'])
-            ->leftJoin(['c' => 'credit'], [
-                'and',
-                'c.company_id = co.id',
-                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
-                ['between', 'c.created', $start, $end],
-            ])
-            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
-            ->leftJoin(['p' => 'payments'], 'p.credit_id = c.id')
-            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
-            ->all();
-
-        $contractStatistic = (new Query())
-            ->select([
-                'company_id' => 'co.id',
-                'company_name' => 'co.name',
-                'month_count' => 'plans.month_count',
-                'contract_sum' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
-            ])
-            ->from(['co' => 'company'])
-            ->leftJoin(['c' => 'credit'], [
-                'and',
-                'c.company_id = co.id',
-                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
-                ['between', 'c.created', $start, $end],
-            ])
-            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
-            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
-            ->all();
+        $planCountSubQuery = $this->getStatisticPlanCountSubQuery();
+        $statistic = $this->getStatisticCreditRows($planCountSubQuery, $start, $end);
+        $contractStatistic = $this->getStatisticContractRows($planCountSubQuery, $start, $end);
+        $paymentStatistic = $this->getStatisticPaymentRows($planCountSubQuery, $start, $end);
 
         $companies = [];
         $monthCounts = [];
@@ -455,6 +394,79 @@ class ReportController extends Controller
             'paymentCompanies' => $paymentCompanies,
             'paymentMonthCounts' => $paymentMonthCounts,
         ]);
+    }
+
+    private function getStatisticPlanCountSubQuery()
+    {
+        return (new Query())
+            ->select([
+                'credit_id',
+                'month_count' => new Expression('COUNT(*)'),
+            ])
+            ->from('credit_plan')
+            ->groupBy('credit_id');
+    }
+
+    private function getStatisticCreditRows(Query $planCountSubQuery, $start, $end)
+    {
+        return (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'credit_count' => new Expression('COUNT(c.id)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+    }
+
+    private function getStatisticContractRows(Query $planCountSubQuery, $start, $end)
+    {
+        return (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'contract_sum' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+    }
+
+    private function getStatisticPaymentRows(Query $planCountSubQuery, $start, $end)
+    {
+        return (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'payment_sum' => new Expression('COALESCE(SUM(p.amount), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->leftJoin(['p' => 'payments'], 'p.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+    }
+
+    private function getStatisticCreditJoinCondition($start, $end)
+    {
+        return [
+            'and',
+            'c.company_id = co.id',
+            ['not in', 'c.credit_status', [-1, -2, 3, 5]],
+            ['between', 'c.created', $start, $end],
+        ];
     }
 
 
