@@ -329,7 +329,7 @@ class ReportController extends Controller
             ->leftJoin(['c' => 'credit'], [
                 'and',
                 'c.company_id = co.id',
-                ['c.credit_status' => 2],
+                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
                 ['between', 'c.created', $start, $end],
             ])
             ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
@@ -348,7 +348,7 @@ class ReportController extends Controller
             ->leftJoin(['c' => 'credit'], [
                 'and',
                 'c.company_id = co.id',
-                ['c.credit_status' => 2],
+                ['not in', 'c.credit_status', [-1, -2, 3, 5]],
                 ['between', 'c.created', $start, $end],
             ])
             ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
