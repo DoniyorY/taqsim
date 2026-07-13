@@ -36,19 +36,29 @@ use yii\widgets\ActiveForm;
    </div>
    <?php ActiveForm::end(); ?>
 
-   <ul class="nav nav-pills mt-3 mb-2" role="navigation" aria-label="Навигация по таблицам">
+   <style>
+      .statistic-count .tab-pane {
+         display: none;
+      }
+      .statistic-count .tab-pane.active {
+         display: block;
+      }
+   </style>
+
+   <ul class="nav nav-tabs mt-3 mb-2" id="statistic-count-tabs" role="tablist" aria-label="Навигация по таблицам">
       <li class="nav-item">
-         <a href="#credit-count-table" class="nav-link active">Количество кредитов</a>
+         <a href="#credit-count-tab" class="nav-link active" role="tab" data-tab-target="credit-count-tab">Количество кредитов</a>
       </li>
       <li class="nav-item">
-         <a href="#contract-sum-table" class="nav-link">Сумма договоров</a>
+         <a href="#contract-sum-tab" class="nav-link" role="tab" data-tab-target="contract-sum-tab">Сумма договоров</a>
       </li>
       <li class="nav-item">
-         <a href="#payment-sum-table" class="nav-link">Сумма платежей</a>
+         <a href="#payment-sum-tab" class="nav-link" role="tab" data-tab-target="payment-sum-tab">Сумма платежей</a>
       </li>
    </ul>
 
-   <div class="mt-2" id="credit-count-table">
+   <div class="tab-content">
+   <div class="tab-pane active mt-2" id="credit-count-tab" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center">
          <h3>Количество кредитов по количеству месяцев</h3>
          <button class="btn btn-primary btn-xsmall mb-2"
@@ -105,9 +115,7 @@ use yii\widgets\ActiveForm;
       </table>
    </div>
 
-   <hr>
-
-   <div class="mt-2" id="contract-sum-table">
+   <div class="tab-pane mt-2" id="contract-sum-tab" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center">
          <h3>Сумма договоров по количеству месяцев</h3>
          <button class="btn btn-primary btn-xsmall mb-2"
@@ -164,9 +172,7 @@ use yii\widgets\ActiveForm;
       </table>
    </div>
 
-   <hr>
-
-   <div class="mt-2" id="payment-sum-table">
+   <div class="tab-pane mt-2" id="payment-sum-tab" role="tabpanel">
       <div class="d-flex justify-content-between align-items-center">
          <h3>Сумма платежей по количеству месяцев</h3>
          <button class="btn btn-primary btn-xsmall mb-2"
@@ -222,9 +228,26 @@ use yii\widgets\ActiveForm;
          </tfoot>
       </table>
    </div>
+   </div>
 </div>
 <script type="text/javascript" src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
 <script>
+    document.querySelectorAll('#statistic-count-tabs [data-tab-target]').forEach(function (tabLink) {
+        tabLink.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            document.querySelectorAll('#statistic-count-tabs .nav-link').forEach(function (link) {
+                link.classList.remove('active');
+            });
+            document.querySelectorAll('.statistic-count .tab-pane').forEach(function (tabPane) {
+                tabPane.classList.remove('active');
+            });
+
+            tabLink.classList.add('active');
+            document.getElementById(tabLink.getAttribute('data-tab-target')).classList.add('active');
+        });
+    });
+
     function ExportToExcel(tableId, filename, type) {
         var elt = document.getElementById(tableId);
         var exportType = type || 'xlsx';
