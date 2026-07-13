@@ -30,6 +30,7 @@ class ReportController extends Controller
                             'credit',
                             'index',
                             'statistic',
+                            'statistic-count',
                             'report',
                             'company',
                             'company-index',
@@ -297,6 +298,10 @@ class ReportController extends Controller
             'end' => $end,
             'company' => $company,
         ]);
+    }
+    
+    public function actionStatisticCount(){
+    
     }
 
 
