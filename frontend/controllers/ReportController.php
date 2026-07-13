@@ -443,6 +443,9 @@ class ReportController extends Controller
 
     private function getStatisticPaymentRows(Query $planCountSubQuery, $start, $end)
     {
+        $creditJoinCondition = $this->getStatisticCreditJoinCondition($start, $end);
+        $creditJoinCondition[] = ['c.rejected' => 0];
+
         return (new Query())
             ->select([
                 'company_id' => 'co.id',
@@ -451,7 +454,7 @@ class ReportController extends Controller
                 'payment_sum' => new Expression('COALESCE(SUM(p.amount), 0)'),
             ])
             ->from(['co' => 'company'])
-            ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+            ->leftJoin(['c' => 'credit'], $creditJoinCondition)
             ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
             ->leftJoin(['p' => 'payments'], 'p.credit_id = c.id')
             ->groupBy(['co.id', 'co.name', 'plans.month_count'])
