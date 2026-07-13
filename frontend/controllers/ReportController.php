@@ -377,7 +377,8 @@ class ReportController extends Controller
                 $monthCounts[$monthCount] = $monthCount;
             }
         }
-        sort($monthCounts);
+        $monthCounts = array_values(array_unique($monthCounts));
+        sort($monthCounts, SORT_NUMERIC);
 
         $paymentCompanies = [];
         $paymentMonthCounts = $monthCounts;
@@ -399,7 +400,8 @@ class ReportController extends Controller
                 $paymentMonthCounts[$monthCount] = $monthCount;
             }
         }
-        sort($paymentMonthCounts);
+        $paymentMonthCounts = array_values(array_unique($paymentMonthCounts));
+        sort($paymentMonthCounts, SORT_NUMERIC);
 
         return $this->render('statistic_count', [
             'start' => $start,
