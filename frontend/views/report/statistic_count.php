@@ -89,6 +89,59 @@ use yii\widgets\ActiveForm;
          </tfoot>
       </table>
    </div>
+
+   <hr>
+
+   <div class="mt-2">
+      <h3>Сумма платежей по количеству месяцев</h3>
+      <table class="table table-sm table-striped table-bordered text-center" border="1" id="tbl_payment_exporttable_to_xls">
+         <thead>
+         <tr>
+            <th style="border: 1px solid #000"></th>
+            <th style="border: 1px solid #000" colspan="<?= count($paymentMonthCounts) + 1 ?>">Количество месяцев</th>
+         </tr>
+         <tr>
+            <th style="border: 1px solid #000"><?= Yii::$app->params['labels_company'][$lang] ?></th>
+            <?php foreach ($paymentMonthCounts as $monthCount): ?>
+               <th style="border: 1px solid #000"><?= $monthCount ?></th>
+            <?php endforeach; ?>
+            <th style="border: 1px solid #000">Итого</th>
+         </tr>
+         </thead>
+         <tbody>
+         <?php foreach ($paymentCompanies as $company): ?>
+            <tr class="<?= $company['total'] <= 0 ? 'table-danger' : '' ?>">
+               <td style="border: 1px solid #000; text-align: left"><?= Html::encode($company['name']) ?></td>
+               <?php foreach ($paymentMonthCounts as $monthCount): ?>
+                  <td style="border: 1px solid #000">
+                     <?= Yii::$app->formatter->asDecimal($company['sums'][$monthCount] ?? 0, 0) ?>
+                  </td>
+               <?php endforeach; ?>
+               <td style="border: 1px solid #000">
+                  <?= Yii::$app->formatter->asDecimal($company['total'], 0) ?>
+               </td>
+            </tr>
+         <?php endforeach; ?>
+         </tbody>
+         <tfoot class="table-dark">
+         <tr>
+            <td>Итого</td>
+            <?php $paymentGrandTotal = 0; ?>
+            <?php foreach ($paymentMonthCounts as $monthCount): ?>
+               <?php
+               $monthTotal = 0;
+               foreach ($paymentCompanies as $company) {
+                   $monthTotal += $company['sums'][$monthCount] ?? 0;
+               }
+               $paymentGrandTotal += $monthTotal;
+               ?>
+               <td><?= Yii::$app->formatter->asDecimal($monthTotal, 0) ?></td>
+            <?php endforeach; ?>
+            <td><?= Yii::$app->formatter->asDecimal($paymentGrandTotal, 0) ?></td>
+         </tr>
+         </tfoot>
+      </table>
+   </div>
 </div>
 <script type="text/javascript" src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
 <script>

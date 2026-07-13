@@ -337,6 +337,26 @@ class ReportController extends Controller
             ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
             ->all();
 
+        $paymentStatistic = (new Query())
+            ->select([
+                'company_id' => 'co.id',
+                'company_name' => 'co.name',
+                'month_count' => 'plans.month_count',
+                'payment_sum' => new Expression('COALESCE(SUM(p.amount), 0)'),
+            ])
+            ->from(['co' => 'company'])
+            ->leftJoin(['c' => 'credit'], [
+                'and',
+                'c.company_id = co.id',
+                ['c.credit_status' => 2],
+                ['between', 'c.created', $start, $end],
+            ])
+            ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->leftJoin(['p' => 'payments'], 'p.credit_id = c.id')
+            ->groupBy(['co.id', 'co.name', 'plans.month_count'])
+            ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+            ->all();
+
         $companies = [];
         $monthCounts = [];
         foreach ($statistic as $row) {
@@ -359,11 +379,35 @@ class ReportController extends Controller
         }
         sort($monthCounts);
 
+        $paymentCompanies = [];
+        $paymentMonthCounts = $monthCounts;
+        foreach ($paymentStatistic as $row) {
+            $companyId = $row['company_id'];
+            if (!isset($paymentCompanies[$companyId])) {
+                $paymentCompanies[$companyId] = [
+                    'name' => $row['company_name'],
+                    'sums' => [],
+                    'total' => 0,
+                ];
+            }
+
+            if ($row['month_count'] !== null) {
+                $monthCount = (int)$row['month_count'];
+                $paymentSum = (int)$row['payment_sum'];
+                $paymentCompanies[$companyId]['sums'][$monthCount] = $paymentSum;
+                $paymentCompanies[$companyId]['total'] += $paymentSum;
+                $paymentMonthCounts[$monthCount] = $monthCount;
+            }
+        }
+        sort($paymentMonthCounts);
+
         return $this->render('statistic_count', [
             'start' => $start,
             'end' => $end,
             'companies' => $companies,
             'monthCounts' => $monthCounts,
+            'paymentCompanies' => $paymentCompanies,
+            'paymentMonthCounts' => $paymentMonthCounts,
         ]);
     }
 
