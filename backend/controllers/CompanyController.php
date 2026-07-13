@@ -3,11 +3,13 @@
 namespace backend\controllers;
 
 use common\models\Company;
+use common\models\CompanyPlanLimit;
 use common\models\search\CompanySearch;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\data\ActiveDataProvider;
 
 /**
  * CompanyController implements the CRUD actions for Company model.
@@ -73,8 +75,59 @@ class CompanyController extends Controller
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+        $limitModel = new CompanyPlanLimit();
+
+        if ($this->request->isPost && $limitModel->load($this->request->post())) {
+            $limitModel->company_id = $model->id;
+            $limitModel->created = time();
+            $limitModel->status = 1;
+            $limitModel->user_id = \Yii::$app->user->id;
+
+            $transaction = CompanyPlanLimit::getDb()->beginTransaction();
+            try {
+                if ($limitModel->validate()) {
+                    CompanyPlanLimit::updateAll(
+                        ['status' => 0],
+                        [
+                            'company_id' => $model->id,
+                            'type' => $limitModel->type,
+                            'status' => 1,
+                        ]
+                    );
+
+                    if ($limitModel->save(false)) {
+                        $transaction->commit();
+                        \Yii::$app->session->setFlash('success', 'Лимит успешно добавлен');
+                        return $this->redirect(['view', 'id' => $model->id]);
+                    }
+                }
+
+                $transaction->rollBack();
+                \Yii::$app->session->setFlash('error', 'Не удалось добавить лимит');
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+        }
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
+            'limitModel' => $limitModel,
+            'contractLimitDataProvider' => $this->getLimitDataProvider($model->id, CompanyPlanLimit::TYPE_CONTRACTS),
+            'paymentLimitDataProvider' => $this->getLimitDataProvider($model->id, CompanyPlanLimit::TYPE_PAYMENTS),
+        ]);
+    }
+
+    private function getLimitDataProvider($companyId, $type)
+    {
+        return new ActiveDataProvider([
+            'query' => CompanyPlanLimit::find()
+                ->where(['company_id' => $companyId, 'type' => $type])
+                ->orderBy(['id' => SORT_DESC]),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
         ]);
     }
 

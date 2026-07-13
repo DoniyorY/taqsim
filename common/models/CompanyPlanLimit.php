@@ -17,7 +17,8 @@ use Yii;
  */
 class CompanyPlanLimit extends \yii\db\ActiveRecord
 {
-
+    const TYPE_CONTRACTS = 1;
+    const TYPE_PAYMENTS = 2;
 
     /**
      * {@inheritdoc}
@@ -33,8 +34,9 @@ class CompanyPlanLimit extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['company_id', 'type', 'limit', 'created', 'status', 'user_id'], 'required'],
+            [['type', 'limit'], 'required'],
             [['company_id', 'type', 'limit', 'created', 'status', 'user_id'], 'integer'],
+            ['type', 'in', 'range' => array_keys(self::typeLabels())],
         ];
     }
 
@@ -45,13 +47,35 @@ class CompanyPlanLimit extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'company_id' => 'Company ID',
-            'type' => 'Type',
-            'limit' => 'Limit',
-            'created' => 'Created',
-            'status' => 'Status',
-            'user_id' => 'User ID',
+            'company_id' => 'Компания',
+            'type' => 'Тип',
+            'limit' => 'Лимит',
+            'created' => 'Дата создания',
+            'status' => 'Статус',
+            'user_id' => 'Пользователь',
         ];
     }
 
+    public static function typeLabels()
+    {
+        return [
+            self::TYPE_CONTRACTS => 'План оформленных договоров',
+            self::TYPE_PAYMENTS => 'План по сбору денег с договоров',
+        ];
+    }
+
+    public function getTypeLabel()
+    {
+        return self::typeLabels()[$this->type] ?? $this->type;
+    }
+
+    public function getStatusLabel()
+    {
+        return $this->status ? 'Активный' : 'Неактивный';
+    }
+
+    public function getUser()
+    {
+        return $this->hasOne(User::className(), ['id' => 'user_id']);
+    }
 }
