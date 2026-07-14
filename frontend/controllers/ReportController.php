@@ -602,7 +602,7 @@ class ReportController extends Controller
         $query = (new Query())
             ->select([
                 'company_id',
-                'limit_id' => new Expression('MAX(id)'),
+                'limit_id' => new Expression("SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY created DESC, id DESC), ',', 1)"),
             ])
             ->from('company_plan_limit')
             ->where(['type' => $type]);
