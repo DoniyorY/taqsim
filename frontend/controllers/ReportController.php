@@ -325,15 +325,20 @@ class ReportController extends Controller
                 $companies[$companyId] = [
                     'name' => $row['company_name'],
                     'counts' => [],
+                    'closed_counts' => [],
                     'total' => 0,
+                    'closed_total' => 0,
                 ];
             }
 
             if ($row['month_count'] !== null) {
                 $monthCount = (int)$row['month_count'];
                 $creditCount = (int)$row['credit_count'];
+                $closedCreditCount = (int)$row['closed_credit_count'];
                 $companies[$companyId]['counts'][$monthCount] = $creditCount;
+                $companies[$companyId]['closed_counts'][$monthCount] = $closedCreditCount;
                 $companies[$companyId]['total'] += $creditCount;
+                $companies[$companyId]['closed_total'] += $closedCreditCount;
                 $monthCounts[$monthCount] = $monthCount;
             }
         }
@@ -411,19 +416,55 @@ class ReportController extends Controller
 
     private function getStatisticCreditRows(Query $planCountSubQuery, $start, $end)
     {
+        $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery();
+        $closedPlanSubQuery = $this->getStatisticClosedPlanSubQuery();
+
         return (new Query())
             ->select([
                 'company_id' => 'co.id',
                 'company_name' => 'co.name',
                 'month_count' => 'plans.month_count',
                 'credit_count' => new Expression('COUNT(c.id)'),
+                'closed_credit_count' => new Expression('SUM(
+                    CASE
+                        WHEN c.id IS NOT NULL
+                            AND (
+                                (c.doc_total_price - COALESCE(payment_sum.amount, 0)) < 5000
+                                OR closed_plan.credit_id IS NOT NULL
+                            )
+                        THEN 1
+                        ELSE 0
+                    END
+                )'),
             ])
             ->from(['co' => 'company'])
             ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
             ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+            ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
+            ->leftJoin(['closed_plan' => $closedPlanSubQuery], 'closed_plan.credit_id = c.id')
             ->groupBy(['co.id', 'co.name', 'plans.month_count'])
             ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
             ->all();
+    }
+
+    private function getStatisticPaymentSumSubQuery()
+    {
+        return (new Query())
+            ->select([
+                'credit_id',
+                'amount' => new Expression('SUM(amount)'),
+            ])
+            ->from('payments')
+            ->groupBy('credit_id');
+    }
+
+    private function getStatisticClosedPlanSubQuery()
+    {
+        return (new Query())
+            ->select(['credit_id'])
+            ->from('credit_plan')
+            ->where(['pay_status' => 2])
+            ->groupBy('credit_id');
     }
 
     private function getStatisticContractRows(Query $planCountSubQuery, $start, $end)
@@ -472,128 +513,6 @@ class ReportController extends Controller
             ['not in', 'c.credit_status', [-1, -2, 3, 5]],
             ['between', 'c.created', $start, $end],
         ];
-    }
-
-
-
-    public function actionCompanyLimitStatistic()
-    {
-        $month = Yii::$app->request->get('month');
-        $monthStart = null;
-        $monthEnd = null;
-
-        if (!empty($month) && preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $monthStart = strtotime($month . '-01');
-            $monthEnd = strtotime(date('Y-m-t', $monthStart)) + 86399;
-        } else {
-            $month = null;
-        }
-
-        return $this->render('company_limit_statistic', [
-            'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd),
-            'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd),
-            'month' => $month,
-        ]);
-    }
-
-    private function getCompanyLimitStatistic($type, $monthStart = null, $monthEnd = null)
-    {
-        $rows = $type == CompanyPlanLimit::TYPE_CONTRACTS
-            ? $this->getCompanyCreditLimitStatistic($monthStart, $monthEnd)
-            : $this->getCompanyPaymentLimitStatistic($monthStart, $monthEnd);
-        $companies = [];
-
-        foreach ($rows as $row) {
-            $companyId = $row['company_id'];
-            if (!isset($companies[$companyId])) {
-                $companies[$companyId] = [
-                    'company_id' => $companyId,
-                    'company_name' => $row['company_name'],
-                    'limit' => (int)$row['limit'],
-                    'total' => 0,
-                    'percent' => null,
-                    'salary_total' => 0,
-                    'rows' => [],
-                ];
-            }
-
-            $summa = (int)$row['summa'];
-            $companies[$companyId]['total'] += $summa;
-            $companies[$companyId]['rows'][] = [
-                'credit_type_id' => $row['credit_type_id'],
-                'credit_type_name' => $row['credit_type_name'] ?: 'Без типа',
-                'summa' => $summa,
-            ];
-        }
-
-        foreach ($companies as &$company) {
-            $company['percent'] = $company['limit'] > 0 ? ($company['total'] / $company['limit']) * 100 : null;
-            foreach ($company['rows'] as &$row) {
-                $row['salary_percent'] = $this->getCompanyLimitSalaryPercent(
-                    $type,
-                    $company['company_name'],
-                    $row['credit_type_name'],
-                    $company['percent']
-                );
-                $row['salary'] = $row['summa'] * ($row['salary_percent'] / 100);
-                $company['salary_total'] += $row['salary'];
-            }
-            unset($row);
-        }
-        unset($company);
-
-        usort($companies, function ($left, $right) {
-            return strcmp($left['company_name'], $right['company_name']);
-        });
-
-        return $companies;
-    }
-
-
-    private function getCompanyLimitSalaryPercent($type, $companyName, $creditTypeName, $companyPercent)
-    {
-        $percentParams = Yii::$app->params['companyLimitStatisticPercents'][$type] ?? [];
-        $defaultPercent = $percentParams['defaultPercent'] ?? 2;
-        $creditCategory = $this->getCompanyLimitCreditCategory($creditTypeName);
-        $companyName = strtolower($companyName);
-
-        foreach ($percentParams['specialCompanies'] ?? [] as $needle => $percents) {
-            if (strpos($companyName, strtolower($needle)) !== false) {
-                return $percents[$creditCategory] ?? $percents['default'] ?? $defaultPercent;
-            }
-        }
-
-        if ($companyPercent !== null) {
-            foreach ($percentParams['ranges'] ?? [] as $range) {
-                $min = $range['min'] ?? null;
-                $max = $range['max'] ?? null;
-                if (($min === null || $companyPercent >= $min) && ($max === null || $companyPercent <= $max)) {
-                    return $range[$creditCategory] ?? $defaultPercent;
-                }
-            }
-        }
-
-        return $defaultPercent;
-    }
-
-    private function getCompanyLimitCreditCategory($creditTypeName)
-    {
-        $creditTypeName = strtolower($creditTypeName);
-        $budgetNeedles = ['byujet', 'byudjet', 'budjet', 'budget', 'davlat'];
-        foreach ($budgetNeedles as $needle) {
-            if (strpos($creditTypeName, $needle) !== false) {
-                return 'budget';
-            }
-        }
-
-        $passportNeedles = ['passport', 'passaport', 'pasport'];
-        foreach ($passportNeedles as $needle) {
-            if (strpos($creditTypeName, $needle) !== false) {
-                return 'passport';
-            }
-        }
-
-        return 'default';
     }
 
 
@@ -890,3 +809,4 @@ class ReportController extends Controller
         die();
     }
 }
+
