@@ -9,6 +9,29 @@ return [
    'atmos_pinfl_token' => 'yO8YIHB8vrzivMETaaSVp4PdU9Ua:j5j_emdaiWE9z6LjMcgcoI1QS24a',
    'bsVersion' => '4.6',
    'apiBearer' => 'yecGilam:Algenix',
+   'companyLimitStatisticPercents' => [
+      1 => [
+         'defaultPercent' => 2,
+         'specialCompanies' => [
+            'jizzax' => [
+               'budget' => 2.5,
+               'passport' => 2.5,
+               'default' => 2.5,
+            ],
+         ],
+         'ranges' => [
+            ['min' => 0, 'max' => 70, 'budget' => 1.8, 'passport' => 2.8],
+            ['min' => 71, 'max' => 100, 'budget' => 2, 'passport' => 3],
+            ['min' => 101, 'max' => 110, 'budget' => 2.2, 'passport' => 3.2],
+            ['min' => 111, 'max' => null, 'budget' => 2.4, 'passport' => 3.4],
+         ],
+      ],
+      2 => [
+         'defaultPercent' => 2,
+         'specialCompanies' => [],
+         'ranges' => [],
+      ],
+   ],
    'algenixAuth' => 'R95GOqLpqa1pu5T:dQ7GsfT2v9V81Qy',
    'algenix_card_token' => 'R95GOqLpqA1pu5T:dQ7GsfT2v9V81Qy',
    'status' => [

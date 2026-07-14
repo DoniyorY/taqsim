@@ -481,7 +481,6 @@ class ReportController extends Controller
         return $this->render('company_limit_statistic', [
             'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS),
             'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS),
-            'salaryPercent' => 2,
         ]);
     }
 
@@ -501,6 +500,7 @@ class ReportController extends Controller
                     'limit' => (int)$row['limit'],
                     'total' => 0,
                     'percent' => null,
+                    'salary_total' => 0,
                     'rows' => [],
                 ];
             }
@@ -516,6 +516,17 @@ class ReportController extends Controller
 
         foreach ($companies as &$company) {
             $company['percent'] = $company['limit'] > 0 ? ($company['total'] / $company['limit']) * 100 : null;
+            foreach ($company['rows'] as &$row) {
+                $row['salary_percent'] = $this->getCompanyLimitSalaryPercent(
+                    $type,
+                    $company['company_name'],
+                    $row['credit_type_name'],
+                    $company['percent']
+                );
+                $row['salary'] = $row['summa'] * ($row['salary_percent'] / 100);
+                $company['salary_total'] += $row['salary'];
+            }
+            unset($row);
         }
         unset($company);
 
@@ -524,6 +535,53 @@ class ReportController extends Controller
         });
 
         return $companies;
+    }
+
+
+    private function getCompanyLimitSalaryPercent($type, $companyName, $creditTypeName, $companyPercent)
+    {
+        $percentParams = Yii::$app->params['companyLimitStatisticPercents'][$type] ?? [];
+        $defaultPercent = $percentParams['defaultPercent'] ?? 2;
+        $creditCategory = $this->getCompanyLimitCreditCategory($creditTypeName);
+        $companyName = strtolower($companyName);
+
+        foreach ($percentParams['specialCompanies'] ?? [] as $needle => $percents) {
+            if (strpos($companyName, strtolower($needle)) !== false) {
+                return $percents[$creditCategory] ?? $percents['default'] ?? $defaultPercent;
+            }
+        }
+
+        if ($companyPercent !== null) {
+            foreach ($percentParams['ranges'] ?? [] as $range) {
+                $min = $range['min'] ?? null;
+                $max = $range['max'] ?? null;
+                if (($min === null || $companyPercent >= $min) && ($max === null || $companyPercent <= $max)) {
+                    return $range[$creditCategory] ?? $defaultPercent;
+                }
+            }
+        }
+
+        return $defaultPercent;
+    }
+
+    private function getCompanyLimitCreditCategory($creditTypeName)
+    {
+        $creditTypeName = strtolower($creditTypeName);
+        $budgetNeedles = ['byujet', 'byudjet', 'budjet', 'budget', 'davlat'];
+        foreach ($budgetNeedles as $needle) {
+            if (strpos($creditTypeName, $needle) !== false) {
+                return 'budget';
+            }
+        }
+
+        $passportNeedles = ['passport', 'passaport', 'pasport'];
+        foreach ($passportNeedles as $needle) {
+            if (strpos($creditTypeName, $needle) !== false) {
+                return 'passport';
+            }
+        }
+
+        return 'default';
     }
 
     private function getCompanyCreditLimitStatistic()

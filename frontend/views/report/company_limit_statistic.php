@@ -6,12 +6,10 @@ use yii\helpers\Html;
 /* @var $this yii\web\View */
 /* @var $contractCompanies array */
 /* @var $paymentCompanies array */
-/* @var $salaryPercent int */
 
 $this->title = 'Статистика лимитов компаний';
 $this->params['breadcrumbs'][] = $this->title;
 $formatter = Yii::$app->formatter;
-$salaryRate = $salaryPercent / 100;
 ?>
 
 <style>
@@ -83,7 +81,7 @@ $salaryRate = $salaryPercent / 100;
 </style>
 
 <?php
-$renderCompanyTables = function ($companies) use ($formatter, $salaryPercent, $salaryRate) {
+$renderCompanyTables = function ($companies) use ($formatter) {
     foreach ($companies as $company): ?>
         <div class="company-limit-card">
             <table class="company-limit-table">
@@ -102,15 +100,15 @@ $renderCompanyTables = function ($companies) use ($formatter, $salaryPercent, $s
                     <tr>
                         <td class="name-cell"><?= Html::encode($row['credit_type_name']) ?></td>
                         <td class="sum-cell"><?= $formatter->asDecimal($row['summa'], 0) ?></td>
-                        <td class="row-percent-cell"><?= $formatter->asDecimal($salaryPercent, 1) ?>%</td>
-                        <td class="monthly-cell"><?= $formatter->asDecimal($row['summa'] * $salaryRate, 0) ?></td>
+                        <td class="row-percent-cell"><?= $formatter->asDecimal($row['salary_percent'], 1) ?>%</td>
+                        <td class="monthly-cell"><?= $formatter->asDecimal($row['salary'], 0) ?></td>
                     </tr>
                 <?php endforeach; ?>
                 <tr class="total-row">
                     <td class="total-label">JAMI :</td>
                     <td class="sum-cell"><?= $formatter->asDecimal($company['total'], 0) ?></td>
                     <td></td>
-                    <td class="monthly-cell"><?= $formatter->asDecimal($company['total'] * $salaryRate, 0) ?></td>
+                    <td class="monthly-cell"><?= $formatter->asDecimal($company['salary_total'], 0) ?></td>
                 </tr>
             </table>
         </div>
