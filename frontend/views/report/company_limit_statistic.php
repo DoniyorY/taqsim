@@ -73,6 +73,36 @@ $formatter = Yii::$app->formatter;
     .company-limit-table .total-label {
         text-align: right;
     }
+    .company-limit-tabs {
+        border-bottom: 0;
+        margin-bottom: 15px;
+    }
+    .company-limit-tabs > li {
+        margin-right: 8px;
+    }
+    .company-limit-tabs .company-limit-tab-link {
+        display: inline-block;
+        padding: 8px 14px;
+        border: 1px solid #2e6da4;
+        border-radius: 4px;
+        background: #337ab7;
+        color: #fff;
+        font-weight: 700;
+        text-decoration: none;
+    }
+    .company-limit-tabs .company-limit-tab-link:hover,
+    .company-limit-tabs .company-limit-tab-link:focus {
+        background: #286090;
+        border-color: #204d74;
+        color: #fff;
+        text-decoration: none;
+    }
+    .company-limit-tabs > li.active .company-limit-tab-link,
+    .company-limit-tabs .company-limit-tab-link.active {
+        background: #5cb85c;
+        border-color: #4cae4c;
+        color: #fff;
+    }
     @media (max-width: 1300px) {
         .company-limit-card {
             width: 100%;
@@ -129,21 +159,21 @@ $renderCompanyTables = function ($companies) use ($formatter) {
         <?= Html::a('Сбросить', ['company-limit-statistic'], ['class' => 'btn btn-default', 'style' => 'margin-left: 5px;']) ?>
     <?= Html::endForm() ?>
 
-    <ul class="nav nav-tabs" role="tablist">
-        <li class="active">
-            <a href="#contract-limit-statistic" role="tab" data-toggle="tab">
+    <ul class="nav company-limit-tabs" role="tablist">
+        <li class="active nav-item">
+            <a class="company-limit-tab-link nav-link active" href="#contract-limit-statistic" role="tab" data-toggle="tab">
                 <?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_CONTRACTS]) ?>
             </a>
         </li>
-        <li>
-            <a href="#payment-limit-statistic" role="tab" data-toggle="tab">
+        <li class="nav-item">
+            <a class="company-limit-tab-link nav-link" href="#payment-limit-statistic" role="tab" data-toggle="tab">
                 <?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_PAYMENTS]) ?>
             </a>
         </li>
     </ul>
 
     <div class="tab-content">
-        <div class="tab-pane active" id="contract-limit-statistic">
+        <div class="tab-pane active show" id="contract-limit-statistic">
             <div class="company-limit-statistic">
                 <?php $renderCompanyTables($contractCompanies); ?>
             </div>
