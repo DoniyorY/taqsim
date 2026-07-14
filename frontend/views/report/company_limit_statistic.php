@@ -6,6 +6,7 @@ use yii\helpers\Html;
 /* @var $this yii\web\View */
 /* @var $contractCompanies array */
 /* @var $paymentCompanies array */
+/* @var $month string */
 
 $this->title = 'Статистика лимитов компаний';
 $this->params['breadcrumbs'][] = $this->title;
@@ -118,6 +119,15 @@ $renderCompanyTables = function ($companies) use ($formatter) {
 
 <div class="report-company-limit-statistic">
     <h1><?= Html::encode($this->title) ?></h1>
+
+    <?= Html::beginForm(['company-limit-statistic'], 'get', ['class' => 'form-inline', 'style' => 'margin-bottom: 15px;']) ?>
+        <div class="form-group">
+            <?= Html::label('Месяц лимита', 'company-limit-month', ['class' => 'control-label', 'style' => 'margin-right: 10px;']) ?>
+            <?= Html::input('month', 'month', $month, ['id' => 'company-limit-month', 'class' => 'form-control']) ?>
+        </div>
+        <?= Html::submitButton('Фильтр', ['class' => 'btn btn-primary', 'style' => 'margin-left: 10px;']) ?>
+        <?= Html::a('Сбросить', ['company-limit-statistic'], ['class' => 'btn btn-default', 'style' => 'margin-left: 5px;']) ?>
+    <?= Html::endForm() ?>
 
     <ul class="nav nav-tabs" role="tablist">
         <li class="active">

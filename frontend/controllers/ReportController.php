@@ -478,17 +478,29 @@ class ReportController extends Controller
 
     public function actionCompanyLimitStatistic()
     {
+        $month = Yii::$app->request->get('month');
+        $monthStart = null;
+        $monthEnd = null;
+
+        if (!empty($month) && preg_match('/^\d{4}-\d{2}$/', $month)) {
+            $monthStart = strtotime($month . '-01');
+            $monthEnd = strtotime(date('Y-m-t', $monthStart)) + 86399;
+        } else {
+            $month = null;
+        }
+
         return $this->render('company_limit_statistic', [
-            'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS),
-            'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS),
+            'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd),
+            'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd),
+            'month' => $month,
         ]);
     }
 
-    private function getCompanyLimitStatistic($type)
+    private function getCompanyLimitStatistic($type, $monthStart = null, $monthEnd = null)
     {
         $rows = $type == CompanyPlanLimit::TYPE_CONTRACTS
-            ? $this->getCompanyCreditLimitStatistic()
-            : $this->getCompanyPaymentLimitStatistic();
+            ? $this->getCompanyCreditLimitStatistic($monthStart, $monthEnd)
+            : $this->getCompanyPaymentLimitStatistic($monthStart, $monthEnd);
         $companies = [];
 
         foreach ($rows as $row) {
@@ -584,8 +596,30 @@ class ReportController extends Controller
         return 'default';
     }
 
-    private function getCompanyCreditLimitStatistic()
+
+    private function getCompanyLimitSubQuery($type, $monthStart = null, $monthEnd = null)
     {
+        $query = (new Query())
+            ->select([
+                'company_id',
+                'limit_id' => new Expression('MAX(id)'),
+            ])
+            ->from('company_plan_limit')
+            ->where(['type' => $type]);
+
+        if ($monthStart !== null && $monthEnd !== null) {
+            $query->andWhere(['between', 'created', $monthStart, $monthEnd]);
+        } else {
+            $query->andWhere(['status' => 1]);
+        }
+
+        return $query->groupBy('company_id');
+    }
+
+    private function getCompanyCreditLimitStatistic($monthStart = null, $monthEnd = null)
+    {
+        $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd);
+
         return (new Query())
             ->select([
                 'company_id' => 'co.id',
@@ -596,12 +630,8 @@ class ReportController extends Controller
                 'summa' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
             ])
             ->from(['co' => 'company'])
-            ->innerJoin(['cpl' => 'company_plan_limit'], [
-                'and',
-                'cpl.company_id = co.id',
-                ['cpl.type' => CompanyPlanLimit::TYPE_CONTRACTS],
-                ['cpl.status' => 1],
-            ])
+            ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
+            ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
             ->leftJoin(['c' => 'credit'], [
                 'and',
                 'c.company_id = co.id',
@@ -614,8 +644,10 @@ class ReportController extends Controller
             ->all();
     }
 
-    private function getCompanyPaymentLimitStatistic()
+    private function getCompanyPaymentLimitStatistic($monthStart = null, $monthEnd = null)
     {
+        $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd);
+
         return (new Query())
             ->select([
                 'company_id' => 'co.id',
@@ -626,12 +658,8 @@ class ReportController extends Controller
                 'summa' => new Expression('COALESCE(SUM(p.amount), 0)'),
             ])
             ->from(['co' => 'company'])
-            ->innerJoin(['cpl' => 'company_plan_limit'], [
-                'and',
-                'cpl.company_id = co.id',
-                ['cpl.type' => CompanyPlanLimit::TYPE_PAYMENTS],
-                ['cpl.status' => 1],
-            ])
+            ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
+            ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
             ->leftJoin(['p' => 'payments'], 'p.company_id = co.id')
             ->leftJoin(['ct' => 'credit_type'], 'ct.id = p.credit_type_id')
             ->groupBy(['co.id', 'co.name', 'cpl.limit', 'p.credit_type_id', 'ct.name'])
