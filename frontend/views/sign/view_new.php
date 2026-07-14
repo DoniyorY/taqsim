@@ -13,7 +13,51 @@ $lang = Yii::$app->language;
 $base = Yii::$app->request->baseUrl;
 echo Yii::$app->view->render('index')
 ?>
+<style>
+    .signature-canvas-wrapper {
+        width: 100%;
+        height: clamp(220px, 45vw, 450px);
+        border: 2px solid #ced4da;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #fff;
 
+        /*
+         * Не даёт странице двигаться,
+         * когда пользователь рисует внутри Canvas.
+         */
+        touch-action: none;
+        overscroll-behavior: contain;
+    }
+
+    #sig-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+
+        /*
+         * Главная настройка для мобильных устройств.
+         * Скролл блокируется только внутри Canvas.
+         */
+        touch-action: none;
+
+        /*
+         * Убирает системное выделение и контекстное меню
+         * при долгом нажатии на iPhone.
+         */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    #sig-image {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+    }
+</style>
 <h4 class="text-left"><?= Html::encode('Информация о договоре') ?></h4>
 <div class="row">
     <div class="col-md-12">
@@ -24,7 +68,7 @@ echo Yii::$app->view->render('index')
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_client'][$lang] ?>
                 </th>
                 <td>
-                    <?= $model->credit->client->fullname ?>
+                   <?= $model->credit->client->fullname ?>
                 </td>
 
                 <th class="table-info">
@@ -32,9 +76,9 @@ echo Yii::$app->view->render('index')
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_guarantor'][$lang] ?>
                 </th>
                 <td>
-                    <?php if (!is_null($model->credit->guarantor_id)) {
-                        echo $model->credit->guarantor->fullname;
-                    } ?>
+                   <?php if (!is_null($model->credit->guarantor_id)) {
+                      echo $model->credit->guarantor->fullname;
+                   } ?>
                 </td>
             </tr>
             <tr>
@@ -43,9 +87,9 @@ echo Yii::$app->view->render('index')
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_credit_id'][$lang] ?>
                 </th>
                 <td>
-
-                    <?php $value = str_replace(',','.',$model->credit->pay_day)?>
-                    <?= $model->credit_id . ' от ' . $model->credit->doc_date_start . ' / ' . Yii::$app->formatter->asDate($value, "php:d") . ' день месяца' ?>
+                   
+                   <?php $value = str_replace(',', '.', $model->credit->pay_day) ?>
+                   <?= $model->credit_id . ' от ' . $model->credit->doc_date_start . ' / ' . Yii::$app->formatter->asDate($value, "php:d") . ' день месяца' ?>
 
                 </td>
                 <th class="table-info">
@@ -53,21 +97,21 @@ echo Yii::$app->view->render('index')
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_month_count'][$lang] ?>
                 </th>
                 <td>
-                    <?= $model->credit->month_count ?>
+                   <?= $model->credit->month_count ?>
                 </td>
             </tr>
             <tr>
                 <th class="table-info">
-                    <?= Yii::$app->params['labels_total_price'][$lang] ?>
+                   <?= Yii::$app->params['labels_total_price'][$lang] ?>
                 </th>
                 <td>
-                    <?= Yii::$app->formatter->asDecimal($model->credit->doc_total_price, 0) ?>
+                   <?= Yii::$app->formatter->asDecimal($model->credit->doc_total_price, 0) ?>
                 </td>
                 <th class="table-info">
-                    <?= Yii::$app->params['labels_prepaid_summa'][$lang] ?>
+                   <?= Yii::$app->params['labels_prepaid_summa'][$lang] ?>
                 </th>
                 <td>
-                    <?= Yii::$app->formatter->asDecimal($model->credit->prepaid_summa, 0) ?>
+                   <?= Yii::$app->formatter->asDecimal($model->credit->prepaid_summa, 0) ?>
                 </td>
             </tr>
             <tr>
@@ -76,14 +120,14 @@ echo Yii::$app->view->render('index')
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_company'][$lang] ?>
                 </th>
                 <td>
-                    <?= $model->credit->company->company_title ?>
+                   <?= $model->credit->company->company_title ?>
                 </td>
                 <th class="table-info">
                     <i class="fa fa-user-circle-o"
                        aria-hidden="true"></i> <?= Yii::$app->params['labels_user'][$lang] ?>
                 </th>
                 <td>
-                    <?= $model->credit->user->username ?>
+                   <?= $model->credit->user->username ?>
                 </td>
             </tr>
         </table>
@@ -92,73 +136,75 @@ echo Yii::$app->view->render('index')
         <h4><?= Yii::$app->params['labels_sign'][$lang] ?>:</h4>
         <hr>
         <div class="row">
-            <div class="col-md-6 col-6">
+            <div class="col-md-6 col-12">
                 <h4><?= Yii::$app->params['labels_sign_photo'][$lang] ?></h4>
-                <?php if (!$photos):?>
-                <?php $form = ActiveForm::begin(['action' => Url::to(['add-photo']), 'method' => 'post']); ?>
-                <?php
-                echo Html::activeHiddenInput($photo, 'client_id', ['value' => $model->credit->client_id]);
-                echo Html::activeHiddenInput($photo, 'credit_id', ['value' => $model->credit_id])
-                ?>
-                <div class="row">
-                    <div class="col-md-6">
-                        <?= $form->field($photo, 'imageFile')->fileInput() ?>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <?= Html::submitButton(Yii::$app->params['labels_save'][$lang], ['class' => 'btn btn-success']) ?>
-                    </div>
-                </div>
-                <?php ActiveForm::end();  else:?>
-                    <div class="card" style="width: 18rem;">
-                        <img src="<?= "$base/uploads/client_current_photos/$photos->image" ?>" class="card-img-top" alt="..."
-                             style="object-fit: cover;">
-                        <div class="card-body p-2">
-                            <?php if ($model->credit->credit_status < 2): ?>
-                                <a href="<?= Url::to(['delete-photo','photo_id'=>$photos->id]) ?>" data-confirm="Подтвердите действие!!!"
-                                   class="btn btn-danger w-100"><?= Yii::$app->params['labels_sign_delete_photo'][$lang] ?></a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
+               <?php if (!$photos): ?>
+                  <?php $form = ActiveForm::begin(['action' => Url::to(['add-photo']), 'method' => 'post']); ?>
+                  <?php
+                  echo Html::activeHiddenInput($photo, 'client_id', ['value' => $model->credit->client_id]);
+                  echo Html::activeHiddenInput($photo, 'credit_id', ['value' => $model->credit_id])
+                  ?>
+                   <div class="row">
+                       <div class="col-md-6">
+                          <?= $form->field($photo, 'imageFile')->fileInput() ?>
+                       </div>
+                       <div class="col-md-6 text-end">
+                          <?= Html::submitButton(Yii::$app->params['labels_save'][$lang], ['class' => 'btn btn-success']) ?>
+                       </div>
+                   </div>
+                  <?php ActiveForm::end(); else: ?>
+                   <div class="card" style="width: 18rem;">
+                       <img src="<?= "$base/uploads/client_current_photos/$photos->image" ?>" class="card-img-top"
+                            alt="..."
+                            style="object-fit: cover;">
+                       <div class="card-body p-2">
+                          <?php if ($model->credit->credit_status < 2): ?>
+                              <a href="<?= Url::to(['delete-photo', 'photo_id' => $photos->id]) ?>"
+                                 data-confirm="Подтвердите действие!!!"
+                                 class="btn btn-danger w-100"><?= Yii::$app->params['labels_sign_delete_photo'][$lang] ?></a>
+                          <?php endif; ?>
+                       </div>
+                   </div>
+               <?php endif; ?>
             </div>
-            <?php if ($photos): ?>
-                <div class="col-md-6 col-6">
-                    <?php if (empty($model->client_sign)): ?>
-                        <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('creditor')"
-                           class="btn btn-success btn-block"><?= Yii::$app->params['client_sign'][$lang] ?></a>
-                    <?php else: ?>
-                        <h5><?= Yii::$app->params['client_sign'][$lang] ?></h5>
-                        <div style="border: gray 1px solid">
-                            <img src="<?= $model->client_sign ?>"
-                                 alt="<?= Yii::$app->params['client_sign'][$lang] ?>"
-                                 style="width: 100%;">
-                        </div>
-                        <?php if ($model->credit->credit_status < 2): ?>
-                            <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('creditor')"
-                               class="btn btn-success btn-block mt-3"><?= Yii::$app->params['change_client_sign'][$lang] ?></a>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-            <div class="col-md-6 col-6">
-                <?php if (isset($model->credit->guarantor_id)): ?>
-                    <?php if (empty($model->guarantor_sign)): ?>
-                        <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('guarantor')"
-                           class="btn btn-success btn-block"><?= Yii::$app->params['guarantor_sign'][$lang] ?></a>
-                    <?php else: ?>
-                        <h5><?= Yii::$app->params['guarantor_sign'][$lang] ?></h5>
-                        <div style="border: gray 1px solid">
-                            <img src="<?= $model->guarantor_sign ?>"
-                                 alt="<?= Yii::$app->params['guarantor_sign'][$lang] ?>"
-                                 style="width: 100%;">
-                        </div>
-                        <?php if ($model->credit->credit_status < 2): ?>
-                            <a data-toggle="modal" href="#ClientSign"
-                               onclick="openCreateClientModal('guarantor')"
-                               class="btn btn-success btn-block mt-3"><?= Yii::$app->params['change_guarantor_sign'][$lang] ?></a>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                <?php endif; ?>
+           <?php if ($photos): ?>
+               <div class="col-md-6 col-12">
+                  <?php if (empty($model->client_sign)): ?>
+                      <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('creditor')"
+                         class="btn btn-success btn-block"><?= Yii::$app->params['client_sign'][$lang] ?></a>
+                  <?php else: ?>
+                      <h5><?= Yii::$app->params['client_sign'][$lang] ?></h5>
+                      <div style="border: gray 1px solid">
+                          <img src="<?= $model->client_sign ?>"
+                               alt="<?= Yii::$app->params['client_sign'][$lang] ?>"
+                               style="width: 100%;">
+                      </div>
+                     <?php if ($model->credit->credit_status < 2): ?>
+                          <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('creditor')"
+                             class="btn btn-success btn-block mt-3"><?= Yii::$app->params['change_client_sign'][$lang] ?></a>
+                     <?php endif; ?>
+                  <?php endif; ?>
+               </div>
+           <?php endif; ?>
+            <div class="col-md-6 col-12">
+               <?php if (isset($model->credit->guarantor_id)): ?>
+                  <?php if (empty($model->guarantor_sign)): ?>
+                       <a data-toggle="modal" href="#ClientSign" onclick="openCreateClientModal('guarantor')"
+                          class="btn btn-success btn-block"><?= Yii::$app->params['guarantor_sign'][$lang] ?></a>
+                  <?php else: ?>
+                       <h5><?= Yii::$app->params['guarantor_sign'][$lang] ?></h5>
+                       <div style="border: gray 1px solid">
+                           <img src="<?= $model->guarantor_sign ?>"
+                                alt="<?= Yii::$app->params['guarantor_sign'][$lang] ?>"
+                                style="width: 100%;">
+                       </div>
+                     <?php if ($model->credit->credit_status < 2): ?>
+                           <a data-toggle="modal" href="#ClientSign"
+                              onclick="openCreateClientModal('guarantor')"
+                              class="btn btn-success btn-block mt-3"><?= Yii::$app->params['change_guarantor_sign'][$lang] ?></a>
+                     <?php endif; ?>
+                  <?php endif; ?>
+               <?php endif; ?>
             </div>
         </div>
 
@@ -184,21 +230,28 @@ echo Yii::$app->view->render('index')
                     <!-- Content -->
                     <div class="container">
                         <div class="row">
-                            <div class="col-md-12">
-                                <h3><span id="client_create_form_type"></span></h3>
-                                <p><?= Yii::$app->params['labels_submit_sign'][$lang] ?></p>
+                            <div class="col-12">
+                                <div class="signature-canvas-wrapper">
+                                    <canvas id="sig-canvas">
+                                        Get a better browser, bro.
+                                    </canvas>
+                                </div>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-12">
-                                <canvas id="sig-canvas" width="450" height="270" style="margin-left: -10px;">
-                                    Get a better browser, bro.
-                                </canvas>
+                            <div class="col-12">
+                                <textarea hidden id="sig-dataUrl" name="signature" class="form-control"
+                                          rows="5"></textarea>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-12">
-                                <textarea hidden id="sig-dataUrl" class="form-control" rows="5"></textarea>
+                            <div class="col-12">
+                                <img
+                                        id="sig-image"
+                                        class="img-fluid mt-3"
+                                        alt="Your signature will go here!"
+                                        hidden
+                                >
                             </div>
                         </div>
                         <br/>
