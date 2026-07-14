@@ -42,3 +42,5 @@ phpunit.phar
 /backend/web/index-test.php
 /backend/web/robots.txt
 /frontend/runtime
+/frontend/views/credit/code.png
+/frontend/views/credit-invoice/code.png
