@@ -12,8 +12,7 @@ use yii\widgets\ActiveForm;
 
     <?php $form = ActiveForm::begin(); ?>
 
-    <?= $form->field($model, 'status')->textInput() ?>
-
+    <?=$form->field($model, 'role')->dropDownList(Yii::$app->params['user_roles'][Yii::$app->language])->label('Роль')?>
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
     </div>

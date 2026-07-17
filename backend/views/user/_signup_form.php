@@ -14,11 +14,11 @@ use yii\widgets\ActiveForm;
         <div class="col-lg-6">
             <?php $form = ActiveForm::begin(['id' => 'form-signup']); ?>
 
-            <?= $form->field($model, 'username')->textInput(['autofocus' => true])->label('Логин') ?>
+            <?= $form->field($model, 'username')->textInput(['autofocus' => true, 'required'=>true])->label('Логин') ?>
 
             <?= $form->field($model, 'email')->label('Эл.почта') ?>
 
-            <?= $form->field($model, 'password')->passwordInput()->label('Пароль') ?>
+            <?= $form->field($model, 'password')->passwordInput(['required'=>true])->label('Пароль') ?>
             <hr/>
             <?=$form->field($model, 'role')->dropDownList(Yii::$app->params['user_roles'][Yii::$app->language], ['value'=> 2])->label('Роль')?>
             <div class="form-group">
