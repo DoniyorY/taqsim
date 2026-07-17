@@ -233,7 +233,7 @@ Modal::end();
                             'class' => 'showModalButton'
                         ]];
                     }*/
-                    for ($i = 4; $i < 7; $i++) {
+                    for ($i = 3; $i < 7; $i++) {
                         if ($model->pay_status === $i or Yii::$app->user->identity->role === 0) {
                             $menuItems[] = ['label' => Yii::$app->params['labels_lawyer_change'][$lang][$i + 1], 'url' => ['/credit-plan/status', 'id' => $model->id, 'status' => $i + 1], 'linkOptions' => [
                                 'data-confirm' => 'Подтвердите действие!!!',
