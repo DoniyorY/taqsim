@@ -203,64 +203,92 @@ class ReportController extends Controller
 
     public function actionCreditIndex()
     {
-        if (Yii::$app->request->get('Search')) {
-            $get_request = $_GET['Search'];
-            $start = strtotime($get_request['start']);
-            $end = strtotime($get_request['end']) + 86399;
-            $company = $get_request['company'];
-            if (empty($start) or empty($end)) {
-                $start = strtotime(date('Y-m-01'));
-                $end = strtotime(date('Y-m-t'));
-            }
-            if (!empty($company)) {
-                $extra_com = ' AND c.company_id =' . $company;
-            } else {
-                $extra_com = '';
-            }
-            $type_post = $get_request['credit-type'];
-            if ($type_post) {
-                $type_request = 'AND c.credit_type_id=' . $type_post;
-            } else {
-                $type_request = '';
-            }
-        } else {
+        $search = Yii::$app->request->get('Search', []);
+
+        $start = !empty($search['start']) ? strtotime($search['start']) : strtotime(date('Y-m-01'));
+        $end = !empty($search['end']) ? strtotime($search['end']) + 86399 : strtotime(date('Y-m-t'));
+
+        if (empty($start) || empty($end)) {
             $start = strtotime(date('Y-m-01'));
             $end = strtotime(date('Y-m-t'));
-            $extra_com = '';
-            $type_request = '';
         }
+
+        $params = [
+            ':start' => $start,
+            ':end' => $end,
+        ];
+        $where = [
+            'c.credit_status <> -2',
+            'c.rejected = 0',
+            'c.created BETWEEN :start AND :end',
+        ];
+
+        if (!empty($search['company'])) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = (int)$search['company'];
+        }
+
+        if (!empty($search['credit-type'])) {
+            $where[] = 'c.credit_type_id = :credit_type_id';
+            $params[':credit_type_id'] = (int)$search['credit-type'];
+        }
+
         $sql = '
-          SELECT c.*, cl.fullname, cl.phone, co.name, u.username, c.self_price as real_summa, c.percent, c.prepaid_summa, ct.name as type_name
-           FROM credit AS c 
+          SELECT
+                c.id,
+                c.doc_date_start,
+                c.self_price AS real_summa,
+                c.percent,
+                c.prepaid_summa,
+                cl.fullname,
+                cl.phone,
+                co.name,
+                u.username,
+                ct.name AS type_name,
+                COALESCE(p.psumma, 0) AS psumma
+           FROM credit AS c
                  LEFT JOIN `client` cl ON c.client_id = cl.id
                  LEFT JOIN `company` co ON c.company_id = co.id
-                 LEFT JOIN `user` u ON c.user_id = u.id     
-                 LEFT JOIN `credit_type` ct ON c.credit_type_id = ct.id     
-                 WHERE (c.credit_status<>-2) AND (c.rejected=0) AND (c.created BETWEEN ' . $start . ' AND ' . $end . ') ' . $extra_com . ' ' . $type_request . ' 
-                 GROUP BY c.id
+                 LEFT JOIN `user` u ON c.user_id = u.id
+                 LEFT JOIN `credit_type` ct ON c.credit_type_id = ct.id
+                 LEFT JOIN (
+                    SELECT credit_id, SUM(amount) AS psumma
+                    FROM payments
+                    WHERE created BETWEEN :start AND :end
+                    GROUP BY credit_id
+                 ) p ON p.credit_id = c.id
+                 WHERE ' . implode(' AND ', $where) . '
                  ORDER BY c.created DESC;
         ';
 
-        $payments = '
-          SELECT c.id, SUM(p.amount) as psumma,
-            c.percent, c.doc_total_price-COALESCE(SUM(p.amount), 0) as ost
-          FROM credit AS c 
-                 JOIN payments AS p ON p.credit_id = c.id   
-                 WHERE (c.credit_status<>-2) AND (c.rejected=0) AND (c.created BETWEEN ' . $start . ' AND ' . $end . ') and (p.created BETWEEN ' . $start . ' AND ' . $end . ') ' . $extra_com . ' ' . $type_request . '
-                 GROUP BY c.id
-                 ORDER BY c.created DESC;
-        ';
-        $connection = Yii::$app->getDb();
-        $command = $connection->createCommand($sql);
-        $command2 = $connection->createCommand($payments);
-        $result = $command->queryAll();
-        $result2 = $command2->queryAll();
+        $credits = Yii::$app->db->createCommand($sql, $params)->queryAll();
+        foreach ($credits as &$credit) {
+            $realSumma = (float)$credit['real_summa'];
+            $percent = (float)$credit['percent'];
+
+            if ((int)$credit['id'] === 28943 || (int)$credit['id'] === 28748) {
+                $percent = 4.5;
+            } elseif ((int)$credit['id'] === 28940) {
+                $percent = 14;
+            }
+
+            $ustama = $realSumma * $percent / 100;
+            if ((int)$credit['id'] === 131) {
+                $ustama = ($realSumma * 59.764 / 100) - 26;
+            }
+            if ((int)$credit['id'] === 17349) {
+                $ustama = 0;
+            }
+
+            $credit['ustama'] = $ustama;
+            $credit['ost'] = $realSumma + $ustama - (float)$credit['prepaid_summa'] - (float)$credit['psumma'];
+        }
+        unset($credit);
 
         return $this->render('credit_index', [
             'start' => $start,
             'end' => $end,
-            'credits' => $result,
-            'payments' => $result2,
+            'credits' => $credits,
         ]);
     }
 
