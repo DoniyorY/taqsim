@@ -540,12 +540,13 @@ class ReportController extends Controller
    {
       $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery();
       $closedPlanSubQuery = $this->getStatisticClosedPlanSubQuery();
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
       
       return (new Query())
          ->select([
             'company_id' => 'co.id',
             'company_name' => 'co.name',
-            'month_count' => 'plans.month_count',
+            'month_count' => $monthCountExpression,
             'credit_count' => new Expression('COUNT(c.id)'),
             'closed_credit_count' => new Expression('SUM(
                     CASE
@@ -564,8 +565,8 @@ class ReportController extends Controller
          ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
          ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
          ->leftJoin(['closed_plan' => $closedPlanSubQuery], 'closed_plan.credit_id = c.id')
-         ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-         ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
          ->all();
    }
    
@@ -596,19 +597,21 @@ class ReportController extends Controller
    
    private function getStatisticContractRows(Query $planCountSubQuery, $start, $end)
    {
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
+
       return (new Query())
          ->select([
             'company_id' => 'co.id',
             'company_name' => 'co.name',
-            'month_count' => 'plans.month_count',
+            'month_count' => $monthCountExpression,
             'contract_sum' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
             'plan_total_sum' => 'plans.plan_summa'
          ])
          ->from(['co' => 'company'])
          ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
          ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
-         ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-         ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
          ->all();
    }
    
@@ -618,23 +621,29 @@ class ReportController extends Controller
       $creditJoinCondition[] = ['c.rejected' => 0];
       
       $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery($start, $end);
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
 
       return (new Query())
          ->select([
             'company_id' => 'co.id',
             'company_name' => 'co.name',
-            'month_count' => 'plans.month_count',
+            'month_count' => $monthCountExpression,
             'payment_sum' => new Expression('COALESCE(SUM(payment_sum.amount), 0)'),
          ])
          ->from(['co' => 'company'])
          ->leftJoin(['c' => 'credit'], $creditJoinCondition)
          ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
          ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
-         ->groupBy(['co.id', 'co.name', 'plans.month_count'])
-         ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
          ->all();
    }
    
+   private function getStatisticMonthCountExpression()
+   {
+      return new Expression('COALESCE(NULLIF(c.month_count, 0), plans.month_count)');
+   }
+
    private function getStatisticCreditJoinCondition($start, $end)
    {
       return [
@@ -668,6 +677,16 @@ class ReportController extends Controller
    private function getCompanyCreditLimitStatistic($monthStart = null, $monthEnd = null)
    {
       $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd);
+      $creditJoinCondition = [
+         'and',
+         'c.company_id = co.id',
+         ['<>', 'c.credit_status', -2],
+         ['c.rejected' => 0],
+      ];
+
+      if ($monthStart !== null && $monthEnd !== null) {
+         $creditJoinCondition[] = ['between', 'c.created', $monthStart, $monthEnd];
+      }
       
       return (new Query())
          ->select([
@@ -681,12 +700,7 @@ class ReportController extends Controller
          ->from(['co' => 'company'])
          ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
          ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
-         ->leftJoin(['c' => 'credit'], [
-            'and',
-            'c.company_id = co.id',
-            ['<>', 'c.credit_status', -2],
-            ['c.rejected' => 0],
-         ])
+         ->leftJoin(['c' => 'credit'], $creditJoinCondition)
          ->leftJoin(['ct' => 'credit_type'], 'ct.id = c.credit_type_id')
          ->groupBy(['co.id', 'co.name', 'cpl.limit', 'c.credit_type_id', 'ct.name'])
          ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
@@ -696,6 +710,15 @@ class ReportController extends Controller
    private function getCompanyPaymentLimitStatistic($monthStart = null, $monthEnd = null)
    {
       $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd);
+      $paymentJoinCondition = 'p.company_id = co.id';
+
+      if ($monthStart !== null && $monthEnd !== null) {
+         $paymentJoinCondition = [
+            'and',
+            'p.company_id = co.id',
+            ['between', 'p.created', $monthStart, $monthEnd],
+         ];
+      }
       
       return (new Query())
          ->select([
@@ -709,7 +732,7 @@ class ReportController extends Controller
          ->from(['co' => 'company'])
          ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
          ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
-         ->leftJoin(['p' => 'payments'], 'p.company_id = co.id')
+         ->leftJoin(['p' => 'payments'], $paymentJoinCondition)
          ->leftJoin(['ct' => 'credit_type'], 'ct.id = p.credit_type_id')
          ->groupBy(['co.id', 'co.name', 'cpl.limit', 'p.credit_type_id', 'ct.name'])
          ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
@@ -939,4 +962,3 @@ class ReportController extends Controller
       die();
    }
 }
-
