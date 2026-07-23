@@ -569,15 +569,20 @@ class ReportController extends Controller
          ->all();
    }
    
-   private function getStatisticPaymentSumSubQuery()
+   private function getStatisticPaymentSumSubQuery($start = null, $end = null)
    {
-      return (new Query())
+      $query = (new Query())
          ->select([
             'credit_id',
             'amount' => new Expression('SUM(amount)'),
          ])
-         ->from('payments')
-         ->groupBy('credit_id');
+         ->from('payments');
+
+      if ($start !== null && $end !== null) {
+         $query->where(['between', 'created', $start, $end]);
+      }
+
+      return $query->groupBy('credit_id');
    }
    
    private function getStatisticClosedPlanSubQuery()
@@ -612,17 +617,19 @@ class ReportController extends Controller
       $creditJoinCondition = $this->getStatisticCreditJoinCondition($start, $end);
       $creditJoinCondition[] = ['c.rejected' => 0];
       
+      $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery($start, $end);
+
       return (new Query())
          ->select([
             'company_id' => 'co.id',
             'company_name' => 'co.name',
             'month_count' => 'plans.month_count',
-            'payment_sum' => new Expression('COALESCE(SUM(p.amount), 0)'),
+            'payment_sum' => new Expression('COALESCE(SUM(payment_sum.amount), 0)'),
          ])
          ->from(['co' => 'company'])
          ->leftJoin(['c' => 'credit'], $creditJoinCondition)
          ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
-         ->leftJoin(['p' => 'payments'], 'p.credit_id = c.id')
+         ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
          ->groupBy(['co.id', 'co.name', 'plans.month_count'])
          ->orderBy(['co.name' => SORT_ASC, 'plans.month_count' => SORT_ASC])
          ->all();
