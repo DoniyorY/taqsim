@@ -407,16 +407,14 @@ class ReportController extends Controller
    public function actionCompanyLimitStatistic()
    {
       $month = Yii::$app->request->get('month');
-      $monthStart = null;
-      $monthEnd = null;
       
-      if (!empty($month) && preg_match('/^\d{4}-\d{2}$/', $month)) {
-         $monthStart = strtotime($month . '-01');
-         $monthEnd = strtotime(date('Y-m-t', $monthStart)) + 86399;
-      } else {
-         $month = null;
+      if (empty($month) || !preg_match('/^\d{4}-\d{2}$/', $month)) {
+         $month = date('Y-m');
       }
       
+      $monthStart = strtotime($month . '-01');
+      $monthEnd = strtotime(date('Y-m-t', $monthStart)) + 86399;
+
       return $this->render('company_limit_statistic', [
          'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd),
          'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd),
