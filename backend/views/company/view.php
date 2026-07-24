@@ -71,7 +71,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     [
                         'attribute' => 'limit',
                         'value' => function (CompanyPlanLimit $model) {
-                            return Yii::$app->formatter->asDecimal($model->limit);
+                            return Yii::$app->formatter->asDecimal($model->limit,0);
                         },
                     ],
                     [
@@ -104,7 +104,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     [
                         'attribute' => 'limit',
                         'value' => function (CompanyPlanLimit $model) {
-                            return Yii::$app->formatter->asDecimal($model->limit);
+                            return Yii::$app->formatter->asDecimal($model->limit,0);
                         },
                     ],
                     [

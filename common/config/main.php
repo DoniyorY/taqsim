@@ -14,6 +14,10 @@ return [
             'username' => 'taqsim_savdo',
             'password' => 'Msl2&aj$8217',
         ],
+       'formatter' => [
+          'decimalSeparator' => ',',
+          'thousandSeparator' => ' ',
+       ],
     ],
 
 ];

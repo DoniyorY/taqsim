@@ -71,10 +71,7 @@ return [
             'GET api/algenix/get-debtors-from-outside-source-by-branch-id' => 'api/algenix/get-debtors',
          ]
       ],
-      'formatter' => [
-         'decimalSeparator' => ',',
-         'thousandSeparator' => ' ',
-      ],
+      
    
    ],
    'params' => $params,
