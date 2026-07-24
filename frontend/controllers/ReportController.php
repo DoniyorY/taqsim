@@ -16,7 +16,7 @@ use common\models\search\PaymentsSearch;
 use common\models\Payments;
 use common\models\CreditPlan;
 use common\models\CompanyPlanLimit;
-
+use common\models\CreditType;
 
 class ReportController extends Controller
 {
@@ -447,7 +447,7 @@ class ReportController extends Controller
          $companies[$companyId]['total'] += $summa;
          $companies[$companyId]['rows'][] = [
             'credit_type_id' => $row['credit_type_id'],
-            'credit_type_name' => $row['credit_type_name'] ?: 'Без типа',
+            'credit_type_name' => $this->getCompanyLimitCreditTypeLabel($row['credit_type_id']),
             'summa' => $summa,
          ];
       }
@@ -474,7 +474,10 @@ class ReportController extends Controller
       
       return $companies;
    }
-   
+   private function getCompanyLimitCreditTypeLabel($creditType)
+   {
+      return CreditType::typeLabels()[$creditType] ?? 'Без типа';
+   }
    
    private function getCompanyLimitSalaryPercent($type, $companyName, $creditTypeName, $companyPercent)
    {
@@ -691,8 +694,7 @@ class ReportController extends Controller
             'company_id' => 'co.id',
             'company_name' => 'co.name',
             'limit' => 'cpl.limit',
-            'credit_type_id' => 'c.credit_type_id',
-            'credit_type_name' => 'ct.name',
+            'credit_type_id' => 'ct.type',
             'summa' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
          ])
          ->from(['co' => 'company'])
@@ -700,8 +702,8 @@ class ReportController extends Controller
          ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
          ->leftJoin(['c' => 'credit'], $creditJoinCondition)
          ->leftJoin(['ct' => 'credit_type'], 'ct.id = c.credit_type_id')
-         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'c.credit_type_id', 'ct.name'])
-         ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
+         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'ct.type'])
+         ->orderBy(['co.name' => SORT_ASC, 'ct.type' => SORT_ASC])
          ->all();
    }
    
@@ -723,8 +725,7 @@ class ReportController extends Controller
             'company_id' => 'co.id',
             'company_name' => 'co.name',
             'limit' => 'cpl.limit',
-            'credit_type_id' => 'p.credit_type_id',
-            'credit_type_name' => 'ct.name',
+            'credit_type_id' => 'ct.type',
             'summa' => new Expression('COALESCE(SUM(p.amount), 0)'),
          ])
          ->from(['co' => 'company'])
@@ -732,8 +733,8 @@ class ReportController extends Controller
          ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
          ->leftJoin(['p' => 'payments'], $paymentJoinCondition)
          ->leftJoin(['ct' => 'credit_type'], 'ct.id = p.credit_type_id')
-         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'p.credit_type_id', 'ct.name'])
-         ->orderBy(['co.name' => SORT_ASC, 'ct.name' => SORT_ASC])
+         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'ct.type'])
+         ->orderBy(['co.name' => SORT_ASC, 'ct.type' => SORT_ASC])
          ->all();
    }
    

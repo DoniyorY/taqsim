@@ -91,6 +91,10 @@ return [
       5 => 'table-warning',
       6 => '',
    ],
+   'credit_type'=>[
+      1=>'BUDGET',
+      2=>'PASSPORT',
+   ],
    'pay_status' => [
       'ru' => [
          -1 => 'План составлен',
