@@ -52,7 +52,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="panel-body">
                     <?php $form = ActiveForm::begin(); ?>
 
-                    <?= $form->field($limitModel, 'type')->dropDownList(CompanyPlanLimit::typeLabels()) ?>
+                    <?= $form->field($limitModel, 'type')->dropDownList(CompanyPlanLimit::typeLabels()[Yii::$app->language]) ?>
                     <?= $form->field($limitModel, 'limit')->textInput(['type' => 'number', 'min' => 0]) ?>
 
                     <div class="form-group">
@@ -62,8 +62,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     <?php ActiveForm::end(); ?>
                 </div>
             </div>
-
-            <h3><?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_CONTRACTS]) ?></h3>
+            <h3><?= Html::encode(CompanyPlanLimit::typeLabels()[Yii::$app->language][CompanyPlanLimit::TYPE_CONTRACTS]) ?></h3>
             <?= GridView::widget([
                 'dataProvider' => $contractLimitDataProvider,
                 'summary' => false,
@@ -96,7 +95,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 ],
             ]) ?>
 
-            <h3><?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_PAYMENTS]) ?></h3>
+            <h3><?= Html::encode(CompanyPlanLimit::typeLabels()[Yii::$app->language][CompanyPlanLimit::TYPE_PAYMENTS]) ?></h3>
             <?= GridView::widget([
                 'dataProvider' => $paymentLimitDataProvider,
                 'summary' => false,

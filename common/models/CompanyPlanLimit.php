@@ -59,8 +59,15 @@ class CompanyPlanLimit extends \yii\db\ActiveRecord
     public static function typeLabels()
     {
         return [
-            self::TYPE_CONTRACTS => 'План оформленных договоров',
-            self::TYPE_PAYMENTS => 'План по сбору денег с договоров',
+           'ru'=>[
+              self::TYPE_CONTRACTS => 'План оформленных договоров',
+              self::TYPE_PAYMENTS => 'План по сбору денег с договоров',
+           ],
+           'uz'=>[
+              self::TYPE_CONTRACTS => 'Расмийлаштирилган шартномалар плани',
+              self::TYPE_PAYMENTS => 'Ундирувчилар плани',
+           ]
+           
         ];
     }
 
