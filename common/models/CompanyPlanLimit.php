@@ -36,7 +36,7 @@ class CompanyPlanLimit extends \yii\db\ActiveRecord
         return [
             [['type', 'limit'], 'required'],
             [['company_id', 'type', 'limit', 'created', 'status', 'user_id'], 'integer'],
-            ['type', 'in', 'range' => array_keys(self::typeLabels())],
+            ['type', 'in', 'range' => array_keys(self::typeLabels()[Yii::$app->language])],
         ];
     }
 
