@@ -11,6 +11,7 @@ use yii\helpers\Html;
 $this->title = 'Статистика лимитов компаний';
 $this->params['breadcrumbs'][] = $this->title;
 $formatter = Yii::$app->formatter;
+$lang=Yii::$app->language;
 ?>
 
 <style>
@@ -162,12 +163,12 @@ $renderCompanyTables = function ($companies) use ($formatter) {
     <ul class="nav company-limit-tabs" role="tablist">
         <li class="active nav-item">
             <a class="company-limit-tab-link nav-link active" href="#contract-limit-statistic" role="tab" data-toggle="tab">
-                <?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_CONTRACTS]) ?>
+                <?= Html::encode(CompanyPlanLimit::typeLabels()[$lang][CompanyPlanLimit::TYPE_CONTRACTS]) ?>
             </a>
         </li>
         <li class="nav-item">
             <a class="company-limit-tab-link nav-link" href="#payment-limit-statistic" role="tab" data-toggle="tab">
-                <?= Html::encode(CompanyPlanLimit::typeLabels()[CompanyPlanLimit::TYPE_PAYMENTS]) ?>
+                <?= Html::encode(CompanyPlanLimit::typeLabels()[$lang][CompanyPlanLimit::TYPE_PAYMENTS]) ?>
             </a>
         </li>
     </ul>
