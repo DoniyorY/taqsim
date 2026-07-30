@@ -28,7 +28,6 @@ class LawyerController extends Controller
 
     public function actionIndex($id)
     {
-
         $searchModel = new CreditPlanSearch();
         $searchModel->pay_status = $id;
         $dataProvider = $searchModel->searchLawyer($this->request->queryParams);
