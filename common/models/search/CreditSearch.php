@@ -20,7 +20,7 @@ class CreditSearch extends Credit
     {
         return [
             [['id', 'credit_status', 'user_id', 'credit_type_id', 'guarantor_id', 'company_id', 'client_birthday', 'region_id', 'guar_count', 'guar_summa', 'witness_seller_phone', 'witness_customer_phone', 'self_price', 'percent', 'prepaid_summa', 'method_id', 'month_count', 'doc_total_price', 'client_id', 'created'], 'integer'],
-            [['token', 'doc_date_start', 'doc_date_end', 'pay_day', 'content', 'guar_name',
+            [['token',  'pay_day', 'content', 'guar_name',
                 'guar_type', 'witness_seller_fullname', 'witness_seller_address', 'witness_seller_passport',
                 'witness_customer_fullname', 'witness_customer_address', 'witness_customer_passport',
                 'doc_total_text', 'client_id', 'created','rejected_reason','rejected_user_id'], 'safe'],
@@ -148,8 +148,8 @@ class CreditSearch extends Credit
         ]);
 
         $query->andFilterWhere(['like', 'token', $this->token])
-            ->andFilterWhere(['like', 'doc_date_start', $this->doc_date_start])
-            ->andFilterWhere(['like', 'doc_date_end', $this->doc_date_end])
+            //->andFilterWhere(['like', 'doc_date_start', $this->doc_date_start])
+            //->andFilterWhere(['like', 'doc_date_end', $this->doc_date_end])
             ->andFilterWhere(['like', 'pay_day', $this->pay_day])
             ->andFilterWhere(['like', 'content', $this->content])
             ->andFilterWhere(['like', 'guar_name', $this->guar_name])

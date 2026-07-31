@@ -130,7 +130,9 @@ class SignController extends Controller
     public function actionDeletePhoto($photo_id)
     {
         $model = \common\models\ClientCurrentPhoto::findOne(['id'=>$photo_id]);
-        $model->delete();
+        if ($model){
+           $model->delete();
+        }
         Yii::$app->session->setFlash('warning','Фотография была удалена!!!');
         return $this->redirect(Yii::$app->request->referrer);
     }

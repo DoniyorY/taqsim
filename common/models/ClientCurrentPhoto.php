@@ -32,7 +32,7 @@ class ClientCurrentPhoto extends \yii\db\ActiveRecord
         return [
             [['client_id', 'credit_id', 'image', 'user_id', 'created','imageFile'], 'required'],
             [['client_id', 'credit_id', 'user_id', 'created'], 'integer'],
-            [['imageFile'], 'string', 'max' => 255],
+            [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 1024 * 1024 * 5],
         ];
     }
 
