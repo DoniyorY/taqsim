@@ -100,6 +100,9 @@ class CreditPlanSearch extends CreditPlan
       $query = CreditPlan::find()
          ->where(['is_stopped' => 0, 'pay_status' => 0])
          ->andWhere(['<', 'plan.created', time()])
+	 ->andWhere(['credit.rejected'=>0])
+	 ->andWhere(['>','credit.credit_status',0])
+	 ->andWhere(['!=','credit.credit_status',5])
          ->alias('plan');
       $query->joinWith('client');
       $query->joinWith('credit');

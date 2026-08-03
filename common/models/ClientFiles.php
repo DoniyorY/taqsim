@@ -18,6 +18,7 @@ class ClientFiles extends \yii\db\ActiveRecord
      * {@inheritdoc}
      */
     public $imageFile;
+
     public static function tableName()
     {
         return 'client_files';

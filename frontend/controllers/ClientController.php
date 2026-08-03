@@ -353,8 +353,11 @@ class ClientController extends Controller
                 }
             }
             if ($model->save()) {
-                return $this->redirect(Yii::$app->request->referrer);
+                Yii::$app->session->setFlash('success','Файл успешно добавлен');
+            }else{
+                Yii::$app->session->setFlash('danger','Ошибка при добавлении файла');
             }
+            return $this->redirect(Yii::$app->request->referrer);
         }
     }
 
