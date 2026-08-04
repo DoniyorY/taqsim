@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use bedezign\yii2\audit\AuditTrailBehavior;
 use Yii;
 
 /**
@@ -29,6 +30,14 @@ class Payments extends \yii\db\ActiveRecord
     {
         return 'payments';
     }
+   public function behaviors(): array
+   {
+      return [
+         'audit' => [
+            'class' => AuditTrailBehavior::class,
+         ],
+      ];
+   }
     public $date_begin;
     public $date_end;
     /**

@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use bedezign\yii2\audit\AuditTrailBehavior;
 use Yii;
 use yii\db\Query;
 
@@ -32,6 +33,14 @@ class CreditPlan extends \yii\db\ActiveRecord
     {
         return 'credit_plan';
     }
+   public function behaviors(): array
+   {
+      return [
+         'audit' => [
+            'class' => AuditTrailBehavior::class,
+         ],
+      ];
+   }
 
     /**
      * {@inheritdoc}

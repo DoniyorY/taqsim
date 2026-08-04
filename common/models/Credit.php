@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use bedezign\yii2\audit\AuditTrailBehavior;
 use Yii;
 use yii\db\Query;
 
@@ -55,7 +56,14 @@ class Credit extends \yii\db\ActiveRecord
     {
         return 'credit';
     }
-
+   public function behaviors(): array
+   {
+      return [
+         'audit' => [
+            'class' => AuditTrailBehavior::class,
+         ],
+      ];
+   }
     public $client_birthday;
 
     /**

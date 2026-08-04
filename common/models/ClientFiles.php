@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use bedezign\yii2\audit\AuditTrailBehavior;
 use Yii;
 
 /**
@@ -18,7 +19,14 @@ class ClientFiles extends \yii\db\ActiveRecord
      * {@inheritdoc}
      */
     public $imageFile;
-
+   public function behaviors(): array
+   {
+      return [
+         'audit' => [
+            'class' => AuditTrailBehavior::class,
+         ],
+      ];
+   }
     public static function tableName()
     {
         return 'client_files';

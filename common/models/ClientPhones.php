@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use bedezign\yii2\audit\AuditTrailBehavior;
 use Yii;
 
 /**
@@ -22,7 +23,14 @@ class ClientPhones extends \yii\db\ActiveRecord
     {
         return 'client_phones';
     }
-
+   public function behaviors(): array
+   {
+      return [
+         'audit' => [
+            'class' => AuditTrailBehavior::class,
+         ],
+      ];
+   }
     /**
      * {@inheritdoc}
      */
