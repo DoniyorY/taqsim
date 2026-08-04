@@ -27,7 +27,9 @@
         "jino5577/yii2-date-range-picker": "*",
         "rakhmatov/yii2-playmobile": "*",
         "yiisoft/yii2-httpclient": "2.0.x-dev",
-        "phpoffice/phpspreadsheet": "dev-master"
+        "phpoffice/phpspreadsheet": "dev-master",
+        "bedezign/yii2-audit": "^1.2",
+        "bower-asset/chartjs": "2.9.4"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
