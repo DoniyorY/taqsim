@@ -17,6 +17,9 @@ return [
             'gii/*',
             'site/error',
             'site/index',
+            'sign/search',
+            'sign/view',
+            
          ],
          
          // Поставь свою реальную RBAC-роль администратора
@@ -31,6 +34,21 @@ return [
        'formatter' => [
           'decimalSeparator' => ',',
           'thousandSeparator' => ' ',
+       ],
+       'requestFirewall' => [
+          'class' => common\components\security\RequestFirewall::class,
+          
+          // Первое время только журнал.
+          'blockRequests' => false,
+          
+          // Потом можно включить.
+          'blockScore' => 10,
+          
+          'excludedPaths' => [
+             '/debug/',
+             '/gii/',
+             '/site/upload',
+          ],
        ],
     ],
 

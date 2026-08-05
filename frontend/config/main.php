@@ -9,7 +9,10 @@ $params = array_merge(
 return [
    'id' => 'app-frontend',
    'basePath' => dirname(__DIR__),
-   'bootstrap' => ['log'],
+   'bootstrap' => [
+      'log',
+      'requestFirewall'
+   ],
    'controllerNamespace' => 'frontend\controllers',
    'language' => 'ru',
    'timeZone' => 'Asia/Tashkent',
