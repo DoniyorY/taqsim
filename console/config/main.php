@@ -27,6 +27,17 @@ return [
             'bedezign\yii2\audit\migrations',
          ],
       ],
+      'migrate-audit' => [
+         'class' => \yii\console\controllers\MigrateController::class,
+         
+         'db' => 'auditDb',
+         
+         'migrationTable' => '{{%migration_audit}}',
+         
+         'migrationNamespaces' => [
+            'bedezign\yii2\audit\migrations',
+         ],
+      ],
    ],
    'components' => [
       'log' => [

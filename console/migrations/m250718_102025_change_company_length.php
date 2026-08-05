@@ -12,6 +12,7 @@ class m250718_102025_change_company_length extends Migration
      */
     public function safeUp()
     {
+       return true;
         $this->alterColumn('company','name',$this->string(255));
     }
 

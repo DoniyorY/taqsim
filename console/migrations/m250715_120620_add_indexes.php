@@ -12,6 +12,7 @@ class m250715_120620_add_indexes extends Migration
      */
     public function safeUp()
     {
+       return true;
         // ===== credit =====
         $this->createIndex('idx_credit_status_created', 'credit', ['credit_status', 'created']);
         $this->createIndex('idx_credit_client_id', 'credit', 'client_id');

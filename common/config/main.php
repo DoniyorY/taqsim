@@ -7,7 +7,7 @@ return [
    'modules' => [
       'audit' => [
          'class' => \bedezign\yii2\audit\Audit::class,
-         'db' => 'db',
+         'db' => 'auditDb',
          
          'trackActions' => ['*'],
          
@@ -15,6 +15,8 @@ return [
             'audit/*',
             'debug/*',
             'gii/*',
+            'site/error',
+            'site/index',
          ],
          
          // Поставь свою реальную RBAC-роль администратора
@@ -25,11 +27,6 @@ return [
     'components' => [
         'cache' => [
             'class' => 'yii\caching\FileCache',
-        ],
-        'playmobile' => [
-            'class' => \rakhmatov\playmobile\components\Connection::class,
-            'username' => 'taqsim_savdo',
-            'password' => 'Msl2&aj$8217',
         ],
        'formatter' => [
           'decimalSeparator' => ',',
