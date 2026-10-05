@@ -1,6 +1,6 @@
 <?php
 
-use dosamigos\tinymce\TinyMce;
+use kartik\editors\Summernote;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
@@ -24,18 +24,56 @@ use yii\widgets\ActiveForm;
             <?= $form->field($model, 'company_director')->textInput(['maxlength' => true]) ?>
         </div>
         <div class="col-md-12">
-            <?= $form->field($model, 'company_props')->widget(TinyMce::className(), [
-                'options' => ['rows' => 6],
-                'language' => Yii::$app->language,
-                'clientOptions' => [
-                    'plugins' => [
-                        "advlist autolink lists link charmap print preview anchor",
-                        "searchreplace visualblocks code fullscreen",
-                        "insertdatetime media table contextmenu paste"
-                    ],
-                    'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
-                ]
-            ]);?>
+           <?php
+           echo $form->field($model, 'company_props')->widget(Summernote::class, [
+              'options' => [
+                 'rows' => 6,
+              ],
+              
+              'language' => Yii::$app->language,
+              
+              'useKrajeePresets' => false,
+              
+              'pluginOptions' => [
+                 'height' => 300,
+                 
+                 'toolbar' => [
+                    ['history', ['undo', 'redo']],
+                    
+                    ['style', ['style']],
+                    
+                    ['font', [
+                       'bold',
+                       'italic',
+                       'underline',
+                       'strikethrough',
+                       'clear'
+                    ]],
+                    
+                    ['para', [
+                       'ul',
+                       'ol',
+                       'paragraph'
+                    ]],
+                    
+                    ['insert', [
+                       'link',
+                       'picture',
+                       'video',
+                       'table',
+                       'hr'
+                    ]],
+                    
+                    ['view', [
+                       'fullscreen',
+                       'codeview',
+                       'help'
+                    ]],
+                 ],
+              ],
+           ]);
+           
+           ?>
         </div>
 
     </div>

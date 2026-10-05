@@ -29,7 +29,8 @@
         "yiisoft/yii2-httpclient": "2.0.x-dev",
         "phpoffice/phpspreadsheet": "dev-master",
         "bedezign/yii2-audit": "^1.2",
-        "bower-asset/chartjs": "2.9.4"
+        "bower-asset/chartjs": "2.9.4",
+        "kartik-v/yii2-editors": "^1.0@dev"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
