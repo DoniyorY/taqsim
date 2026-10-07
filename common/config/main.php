@@ -39,10 +39,10 @@ return [
           'class' => common\components\security\RequestFirewall::class,
           
           // Первое время только журнал.
-          'blockRequests' => false,
+          'blockRequests' => true,
           
           // Потом можно включить.
-          'blockScore' => 10,
+          'blockScore' => 7,
           
           'excludedPaths' => [
              '/debug/',

@@ -137,7 +137,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     <?php endif; ?>
                     <li class="nav-item mr-1">
                         <a class="nav-link btn btn-danger"
-                           data-method="post" href="<?= Url::to(['/credit/delete-plan', 'credit' => $model->id]) ?>"
+                           data-method="post" href="<?= Url::to(['/credit/delete-plans', 'credit' => $model->id]) ?>"
                            data-confirm="Подтвердите действие"><?= Yii::$app->params['credit_delete_plan'][$lang] ?></a>
                     </li>
                 <?php endif; ?>

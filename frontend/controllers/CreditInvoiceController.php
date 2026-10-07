@@ -9,6 +9,7 @@ use common\models\CreditPlan;
 use common\models\CreditItem;
 use common\models\search\CreditInvoiceSearch;
 use yii\db\Query;
+use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -32,6 +33,22 @@ class CreditInvoiceController extends Controller
                         'delete' => ['POST'],
                     ],
                 ],
+               'access' => [
+                  'class' => AccessControl::className(),
+                  'only' => ['index', 'contact','guarantor','payment-plan','letter','warning','cheque','view1'],
+                  'rules' => [
+                     [
+                        'actions' => ['index', 'contact','guarantor','payment-plan','letter','warning','cheque','view1'],
+                        'allow' => false,
+                        'roles' => ['?'],
+                     ],
+                     [
+                        'actions' => ['index', 'contact','guarantor','payment-plan','letter','warning','cheque','view1'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                     ],
+                  ],
+               ],
             ]
         );
     }

@@ -553,7 +553,15 @@ class CreditController extends Controller
         return $this->redirect(Yii::$app->request->referrer);
 
     }
-
+   
+   public function actionDeletePlans($credit)
+   {
+      if ($this->request->isPost) {
+         $plan = CreditPlan::deleteAll(['credit_id' => $credit]);
+         $invoice = CreditInvoice::deleteAll(['credit_id' => $credit]);
+         return $this->redirect(['view', 'id' => $credit]);
+      }
+    }
     public function actionDeleteAll($id)
     {
         $credit = Credit::deleteAll(['id' => $id]);
