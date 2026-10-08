@@ -519,6 +519,442 @@ class ReportController extends Controller
       return ['success' => false];
    }
    
+   public function actionStatisticCount()
+   {
+      $request = Yii::$app->request->get('date_begin');
+      if (isset($request)) {
+         $start = strtotime(Yii::$app->request->get('date_begin'));
+         $end = strtotime(Yii::$app->request->get('date_end')) + 86399;
+      } else {
+         $start = strtotime(date('Y-m-01'));
+         $end = strtotime(date('Y-m-t'));
+      }
+      
+      $planCountSubQuery = $this->getStatisticPlanCountSubQuery();
+      $statistic = $this->getStatisticCreditRows($planCountSubQuery, $start, $end);
+      $contractStatistic = $this->getStatisticContractRows($planCountSubQuery, $start, $end);
+      $paymentStatistic = $this->getStatisticPaymentRows($planCountSubQuery, $start, $end);
+      
+      $companies = [];
+      $monthCounts = [];
+      foreach ($statistic as $row) {
+         $companyId = $row['company_id'];
+         if (!isset($companies[$companyId])) {
+            $companies[$companyId] = [
+               'name' => $row['company_name'],
+               'counts' => [],
+               'closed_counts' => [],
+               'total' => 0,
+               'closed_total' => 0,
+            ];
+         }
+         
+         if ($row['month_count'] !== null) {
+            $monthCount = (int)$row['month_count'];
+            $creditCount = (int)$row['credit_count'];
+            $closedCreditCount = (int)$row['closed_credit_count'];
+            $companies[$companyId]['counts'][$monthCount] = $creditCount;
+            $companies[$companyId]['closed_counts'][$monthCount] = $closedCreditCount;
+            $companies[$companyId]['total'] += $creditCount;
+            $companies[$companyId]['closed_total'] += $closedCreditCount;
+            $monthCounts[$monthCount] = $monthCount;
+         }
+      }
+      $monthCounts = array_values(array_unique($monthCounts));
+      sort($monthCounts, SORT_NUMERIC);
+      
+      $contractCompanies = [];
+      $contractMonthCounts = $monthCounts;
+      foreach ($contractStatistic as $row) {
+         $companyId = $row['company_id'];
+         if (!isset($contractCompanies[$companyId])) {
+            $contractCompanies[$companyId] = [
+               'name' => $row['company_name'],
+               'sums' => [],
+               'total' => 0,
+            ];
+         }
+         
+         if ($row['month_count'] !== null) {
+            $monthCount = (int)$row['month_count'];
+            $contractSum = (int)$row['contract_sum'];
+            $contractCompanies[$companyId]['sums'][$monthCount] = $contractSum;
+            $contractCompanies[$companyId]['total'] += $contractSum;
+            $contractMonthCounts[$monthCount] = $monthCount;
+         }
+      }
+      $contractMonthCounts = array_values(array_unique($contractMonthCounts));
+      sort($contractMonthCounts, SORT_NUMERIC);
+      
+      $paymentCompanies = [];
+      $paymentMonthCounts = $monthCounts;
+      foreach ($paymentStatistic as $row) {
+         $companyId = $row['company_id'];
+         if (!isset($paymentCompanies[$companyId])) {
+            $paymentCompanies[$companyId] = [
+               'name' => $row['company_name'],
+               'sums' => [],
+               'total' => 0,
+            ];
+         }
+         
+         if ($row['month_count'] !== null) {
+            $monthCount = (int)$row['month_count'];
+            $paymentSum = (int)$row['payment_sum'];
+            $paymentCompanies[$companyId]['sums'][$monthCount] = $paymentSum;
+            $paymentCompanies[$companyId]['total'] += $paymentSum;
+            $paymentMonthCounts[$monthCount] = $monthCount;
+         }
+      }
+      $paymentMonthCounts = array_values(array_unique($paymentMonthCounts));
+      sort($paymentMonthCounts, SORT_NUMERIC);
+      
+      return $this->render('statistic_count', [
+         'start' => $start,
+         'end' => $end,
+         'companies' => $companies,
+         'monthCounts' => $monthCounts,
+         'contractCompanies' => $contractCompanies,
+         'contractMonthCounts' => $contractMonthCounts,
+         'paymentCompanies' => $paymentCompanies,
+         'paymentMonthCounts' => $paymentMonthCounts,
+      ]);
+   }
+   
+   public function actionCompanyLimitStatistic()
+   {
+      $month = Yii::$app->request->get('month');
+      
+      if (empty($month) || !preg_match('/^\d{4}-\d{2}$/', $month)) {
+         $month = date('Y-m');
+      }
+      
+      $monthStart = strtotime($month . '-01');
+      $monthEnd = strtotime(date('Y-m-t', $monthStart)) + 86399;
+      
+      return $this->render('company_limit_statistic', [
+         'contractCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd),
+         'paymentCompanies' => $this->getCompanyLimitStatistic(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd),
+         'month' => $month,
+      ]);
+   }
+   
+   private function getCompanyLimitStatistic($type, $monthStart = null, $monthEnd = null)
+   {
+      $rows = $type == CompanyPlanLimit::TYPE_CONTRACTS
+         ? $this->getCompanyCreditLimitStatistic($monthStart, $monthEnd)
+         : $this->getCompanyPaymentLimitStatistic($monthStart, $monthEnd);
+      $companies = [];
+      
+      foreach ($rows as $row) {
+         $companyId = $row['company_id'];
+         if (!isset($companies[$companyId])) {
+            $companies[$companyId] = [
+               'company_id' => $companyId,
+               'company_name' => $row['company_name'],
+               'limit' => (int)$row['limit'],
+               'total' => 0,
+               'percent' => null,
+               'salary_total' => 0,
+               'rows' => [],
+            ];
+         }
+         
+         $summa = (int)$row['summa'];
+         $companies[$companyId]['total'] += $summa;
+         $companies[$companyId]['rows'][] = [
+            'credit_type_id' => $row['credit_type_id'],
+            'credit_type_name' => $this->getCompanyLimitCreditTypeLabel($row['credit_type_id']),
+            'summa' => $summa,
+         ];
+      }
+      
+      foreach ($companies as &$company) {
+         $company['percent'] = $company['limit'] > 0 ? ($company['total'] / $company['limit']) * 100 : null;
+         foreach ($company['rows'] as &$row) {
+            $row['salary_percent'] = $this->getCompanyLimitSalaryPercent(
+               $type,
+               $company['company_name'],
+               $row['credit_type_name'],
+               $company['percent']
+            );
+            $row['salary'] = $row['summa'] * ($row['salary_percent'] / 100);
+            $company['salary_total'] += $row['salary'];
+         }
+         unset($row);
+      }
+      unset($company);
+      
+      usort($companies, function ($left, $right) {
+         return strcmp($left['company_name'], $right['company_name']);
+      });
+      
+      return $companies;
+   }
+   private function getCompanyLimitCreditTypeLabel($creditType)
+   {
+      return CreditType::typeLabels()[$creditType] ?? 'Без типа';
+   }
+   
+   private function getCompanyLimitSalaryPercent($type, $companyName, $creditTypeName, $companyPercent)
+   {
+      $percentParams = Yii::$app->params['companyLimitStatisticPercents'][$type] ?? [];
+      $defaultPercent = $percentParams['defaultPercent'] ?? 2;
+      $creditCategory = $this->getCompanyLimitCreditCategory($creditTypeName);
+      $companyName = strtolower($companyName);
+      
+      foreach ($percentParams['specialCompanies'] ?? [] as $needle => $percents) {
+         if (strpos($companyName, strtolower($needle)) !== false) {
+            return $percents[$creditCategory] ?? $percents['default'] ?? $defaultPercent;
+         }
+      }
+      
+      if ($companyPercent !== null) {
+         foreach ($percentParams['ranges'] ?? [] as $range) {
+            $min = $range['min'] ?? null;
+            $max = $range['max'] ?? null;
+            if (($min === null || $companyPercent >= $min) && ($max === null || $companyPercent <= $max)) {
+               return $range[$creditCategory] ?? $defaultPercent;
+            }
+         }
+      }
+      
+      return $defaultPercent;
+   }
+   
+   private function getCompanyLimitCreditCategory($creditTypeName)
+   {
+      $creditTypeName = strtolower($creditTypeName);
+      $budgetNeedles = ['byujet', 'byudjet', 'budjet', 'budget', 'davlat'];
+      foreach ($budgetNeedles as $needle) {
+         if (strpos($creditTypeName, $needle) !== false) {
+            return 'budget';
+         }
+      }
+      
+      $passportNeedles = ['passport', 'passaport', 'pasport'];
+      foreach ($passportNeedles as $needle) {
+         if (strpos($creditTypeName, $needle) !== false) {
+            return 'passport';
+         }
+      }
+      
+      return 'default';
+   }
+   
+   private function getStatisticPlanCountSubQuery()
+   {
+      return (new Query())
+         ->select([
+            'credit_id',
+            'month_count' => new Expression('COUNT(*)'),
+            'plan_summa' => new Expression('SUM(`pay_summa`)'),
+         ])
+         ->from('credit_plan')
+         ->groupBy('credit_id');
+   }
+   
+   private function getStatisticCreditRows(Query $planCountSubQuery, $start, $end)
+   {
+      $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery();
+      $closedPlanSubQuery = $this->getStatisticClosedPlanSubQuery();
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
+      
+      return (new Query())
+         ->select([
+            'company_id' => 'co.id',
+            'company_name' => 'co.name',
+            'month_count' => $monthCountExpression,
+            'credit_count' => new Expression('COUNT(c.id)'),
+            'closed_credit_count' => new Expression('SUM(
+                    CASE
+                        WHEN c.id IS NOT NULL
+                            AND (
+                                (c.doc_total_price - COALESCE(payment_sum.amount, 0)) < 5000
+                                OR closed_plan.credit_id IS NOT NULL
+                            )
+                        THEN 1
+                        ELSE 0
+                    END
+                )'),
+         ])
+         ->from(['co' => 'company'])
+         ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+         ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+         ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
+         ->leftJoin(['closed_plan' => $closedPlanSubQuery], 'closed_plan.credit_id = c.id')
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
+         ->all();
+   }
+   
+   private function getStatisticPaymentSumSubQuery($start = null, $end = null)
+   {
+      $query = (new Query())
+         ->select([
+            'credit_id',
+            'amount' => new Expression('SUM(amount)'),
+         ])
+         ->from('payments');
+      
+      if ($start !== null && $end !== null) {
+         $query->where(['between', 'created', $start, $end]);
+      }
+      
+      return $query->groupBy('credit_id');
+   }
+   
+   private function getStatisticClosedPlanSubQuery()
+   {
+      return (new Query())
+         ->select(['credit_id'])
+         ->from('credit_plan')
+         ->where(['pay_status' => 2])
+         ->groupBy('credit_id');
+   }
+   
+   private function getStatisticContractRows(Query $planCountSubQuery, $start, $end)
+   {
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
+      
+      return (new Query())
+         ->select([
+            'company_id' => 'co.id',
+            'company_name' => 'co.name',
+            'month_count' => $monthCountExpression,
+            'contract_sum' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
+            'plan_total_sum' => 'plans.plan_summa'
+         ])
+         ->from(['co' => 'company'])
+         ->leftJoin(['c' => 'credit'], $this->getStatisticCreditJoinCondition($start, $end))
+         ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
+         ->all();
+   }
+   
+   private function getStatisticPaymentRows(Query $planCountSubQuery, $start, $end)
+   {
+      $creditJoinCondition = $this->getStatisticCreditJoinCondition($start, $end);
+      $creditJoinCondition[] = ['c.rejected' => 0];
+      
+      $paymentSumSubQuery = $this->getStatisticPaymentSumSubQuery($start, $end);
+      $monthCountExpression = $this->getStatisticMonthCountExpression();
+      
+      return (new Query())
+         ->select([
+            'company_id' => 'co.id',
+            'company_name' => 'co.name',
+            'month_count' => $monthCountExpression,
+            'payment_sum' => new Expression('COALESCE(SUM(payment_sum.amount), 0)'),
+         ])
+         ->from(['co' => 'company'])
+         ->leftJoin(['c' => 'credit'], $creditJoinCondition)
+         ->leftJoin(['plans' => $planCountSubQuery], 'plans.credit_id = c.id')
+         ->leftJoin(['payment_sum' => $paymentSumSubQuery], 'payment_sum.credit_id = c.id')
+         ->groupBy(['co.id', 'co.name', $monthCountExpression])
+         ->orderBy(['co.name' => SORT_ASC, 'month_count' => SORT_ASC])
+         ->all();
+   }
+   
+   private function getStatisticMonthCountExpression()
+   {
+      return new Expression('COALESCE(NULLIF(c.month_count, 0), plans.month_count)');
+   }
+   
+   private function getStatisticCreditJoinCondition($start, $end)
+   {
+      return [
+         'and',
+         'c.company_id = co.id',
+         ['not in', 'c.credit_status', [-1, -2, 3, 5]],
+         ['between', 'c.created', $start, $end],
+      ];
+   }
+   
+   
+   private function getCompanyLimitSubQuery($type, $monthStart = null, $monthEnd = null)
+   {
+      $query = (new Query())
+         ->select([
+            'company_id',
+            'limit_id' => new Expression("SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY created DESC, id DESC), ',', 1)"),
+         ])
+         ->from('company_plan_limit')
+         ->where(['type' => $type]);
+      
+      if ($monthStart !== null && $monthEnd !== null) {
+         $query->andWhere(['between', 'created', $monthStart, $monthEnd]);
+      } else {
+         $query->andWhere(['status' => 1]);
+      }
+      
+      return $query->groupBy('company_id');
+   }
+   
+   private function getCompanyCreditLimitStatistic($monthStart = null, $monthEnd = null)
+   {
+      $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_CONTRACTS, $monthStart, $monthEnd);
+      $creditJoinCondition = [
+         'and',
+         'c.company_id = co.id',
+         ['<>', 'c.credit_status', -2],
+         ['c.rejected' => 0],
+      ];
+      
+      if ($monthStart !== null && $monthEnd !== null) {
+         $creditJoinCondition[] = ['between', 'c.created', $monthStart, $monthEnd];
+      }
+      
+      return (new Query())
+         ->select([
+            'company_id' => 'co.id',
+            'company_name' => 'co.name',
+            'limit' => 'cpl.limit',
+            'credit_type_id' => 'ct.type',
+            'summa' => new Expression('COALESCE(SUM(c.doc_total_price), 0)'),
+         ])
+         ->from(['co' => 'company'])
+         ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
+         ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
+         ->leftJoin(['c' => 'credit'], $creditJoinCondition)
+         ->leftJoin(['ct' => 'credit_type'], 'ct.id = c.credit_type_id')
+         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'ct.type'])
+         ->orderBy(['co.name' => SORT_ASC, 'ct.type' => SORT_ASC])
+         ->all();
+   }
+   
+   private function getCompanyPaymentLimitStatistic($monthStart = null, $monthEnd = null)
+   {
+      $limitSubQuery = $this->getCompanyLimitSubQuery(CompanyPlanLimit::TYPE_PAYMENTS, $monthStart, $monthEnd);
+      $paymentJoinCondition = 'p.company_id = co.id';
+      
+      if ($monthStart !== null && $monthEnd !== null) {
+         $paymentJoinCondition = [
+            'and',
+            'p.company_id = co.id',
+            ['between', 'p.created', $monthStart, $monthEnd],
+         ];
+      }
+      
+      return (new Query())
+         ->select([
+            'company_id' => 'co.id',
+            'company_name' => 'co.name',
+            'limit' => 'cpl.limit',
+            'credit_type_id' => 'ct.type',
+            'summa' => new Expression('COALESCE(SUM(p.amount), 0)'),
+         ])
+         ->from(['co' => 'company'])
+         ->innerJoin(['limit_filter' => $limitSubQuery], 'limit_filter.company_id = co.id')
+         ->innerJoin(['cpl' => 'company_plan_limit'], 'cpl.id = limit_filter.limit_id')
+         ->leftJoin(['p' => 'payments'], $paymentJoinCondition)
+         ->leftJoin(['ct' => 'credit_type'], 'ct.id = p.credit_type_id')
+         ->groupBy(['co.id', 'co.name', 'cpl.limit', 'ct.type'])
+         ->orderBy(['co.name' => SORT_ASC, 'ct.type' => SORT_ASC])
+         ->all();
+   }
+   
    private function debug($data)
    {
       echo "<pre>";
