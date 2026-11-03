@@ -1029,11 +1029,15 @@ return [
    ],
    'labels_name' => [
       'ru' => 'Название',
-      'uz' => '',
+      'uz' => 'Nomi',
    ],
    'labels_value' => [
       'ru' => 'Значение',
       'uz' => '',
+   ],
+   'labels_settings_value' => [
+      'ru' => 'Значение в днях',
+      'uz' => 'Kunlar',
    ],
    'labels_to_pay' => [
       'ru' => 'Оплатить',
