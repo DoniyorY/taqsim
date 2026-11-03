@@ -41,7 +41,7 @@ class Settings extends \yii\db\ActiveRecord
       return [
          'id' => 'ID',
          'name' => Yii::$app->params['labels_name'][Yii::$app->language],
-         'value' => Yii::$app->params['labels_value'][Yii::$app->language],
+         'value' => Yii::$app->params['labels_settings_value'][Yii::$app->language],
          'company_id' => Yii::$app->params['labels_company'][Yii::$app->language],
       ];
    }
