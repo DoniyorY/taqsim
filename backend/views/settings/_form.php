@@ -1,5 +1,7 @@
 <?php
 
+use common\models\Company;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
@@ -10,12 +12,15 @@ use yii\widgets\ActiveForm;
 
 <div class="settings-form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data'],'action' => ['create']]); ?>
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <?= $form->field($model, 'name')->textInput() ?>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+               <?=$form->field($model, 'company_id')->dropDownList(ArrayHelper::map(Company::find()->all(),'id','name'),['prompt'=>'Выберите Филиал'])?>
+            </div>
+            <div class="col-md-4">
                 <?= $form->field($model, 'value')->textInput() ?>
             </div>
             <div class="form-group col-md-12">

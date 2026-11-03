@@ -50,6 +50,7 @@ $lang = Yii::$app->language;
                 ['label' => Yii::$app->params['labels_region'][$lang], 'url' =>['/region/index']],
                 ['label' => Yii::$app->params['labels_credit_type'][$lang], 'url' => ['/credit-type/index']],
                 ['label' => Yii::$app->params['labels_user'][$lang], 'url' => ['/user/index']],
+                ['label' => 'Зарплата', 'url' => ['/salary/index'], 'visible' => !Yii::$app->user->isGuest && (int) Yii::$app->user->identity->role === 0],
                 ['label' => Yii::$app->params['labels_settings'][$lang], 'url' => ['/settings/index']],
                 ['label' => Yii::$app->params['labels_settings_db'][$lang], 'url' => ['/db/index']],
             ]],

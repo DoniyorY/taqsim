@@ -95,7 +95,7 @@ class CronController extends Controller
                 ->andWhere(['<', 'credit_plan.created', $dayStart])
                 ->all();
             \Yii::info('Found plans: ' . count($dataProvider), 'cron.checkPlans');
-            $settings = Settings::find()->one();
+            $settings = Settings::findOne(['id'=>1]);
             foreach ($dataProvider as $item) {
                 \Yii::info("Checking plan ID={$item->id}, credit_id={$item->credit_id}", 'cron.checkPlans');
                 $days_limit = $item->created + 86400 * $settings->value;

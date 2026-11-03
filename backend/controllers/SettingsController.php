@@ -46,6 +46,16 @@ class SettingsController extends Controller
             'dataProvider' => $dataProvider,
         ]);
     }
+   
+   public function actionCreate()
+   {
+      $model = new Settings();
+      if ($this->request->isPost) {
+         if ($model->load($this->request->post()) && $model->save()) {
+            return $this->redirect(['index']);
+         }
+      }
+    }
 
     /**
      * Updates an existing Settings model.
