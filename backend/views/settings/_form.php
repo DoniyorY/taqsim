@@ -8,11 +8,17 @@ use yii\widgets\ActiveForm;
 /** @var yii\web\View $this */
 /** @var common\models\Settings $model */
 /** @var yii\widgets\ActiveForm $form */
+
+if ($model->isNewRecord) {
+   $options = ['options' => ['enctype' => 'multipart/form-data'],'action' => ['create']];
+}else{
+   $options = ['options' => ['enctype' => 'multipart/form-data'],'action' => ['update','id'=>$model->id]];
+}
 ?>
 
 <div class="settings-form">
 
-    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data'],'action' => ['create']]); ?>
+    <?php $form = ActiveForm::begin(); ?>
         <div class="row">
             <div class="col-md-4">
                 <?= $form->field($model, 'name')->textInput() ?>
