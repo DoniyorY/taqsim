@@ -51,7 +51,13 @@ class SettingsController extends Controller
    {
       $model = new Settings();
       if ($this->request->isPost) {
-         if ($model->load($this->request->post()) && $model->save()) {
+         if ($model->load($this->request->post())) {
+            $check = Settings::findOne(['company_id' => $model->company_id]);
+            if ($check) {
+               \Yii::$app->session->setFlash('warning','This Company already exists');
+               return $this->redirect(['index']);
+            }
+            $model->save();
             return $this->redirect(['index']);
          }
       }
