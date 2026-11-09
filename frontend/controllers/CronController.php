@@ -190,7 +190,7 @@ class CronController extends Controller
       \Yii::$app->response->format = Response::FORMAT_JSON;
       $settings = Settings::find()->all();
       $now = time();
-      $defaultDays = 20;
+      $defaultDays = 7; //20
       $dayInSeconds = 86400;
       //$twentyDaysAgo = $now - 20 * $dayInSeconds;
       $companyArr = [];
